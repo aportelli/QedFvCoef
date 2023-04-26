@@ -1,0 +1,5 @@
+add_executable(qed-fv-coeff main.c)
+target_include_directories(qed-fv-coeff PRIVATE ../lib)
+target_link_libraries(qed-fv-coeff PRIVATE qedfvcoef)
+target_link_libraries(qed-fv-coeff PRIVATE OpenMP::OpenMP_C)
+install(TARGETS qed-fv-coeff DESTINATION ${CMAKE_INSTALL_BINDIR})
