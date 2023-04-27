@@ -7,8 +7,7 @@ int main(void)
 
   dvec3 v = {0.999, 0., 0.};
   ctx->debug = true;
-  ctx->nmax = 425;
-  double s = qedfv_coef(0., v, 0.3, ctx);
+  double s = qedfv_coef(0., v, 0.3, 425, ctx);
   printf("%f\n", s);
 
   qedfv_destroy_context(ctx);

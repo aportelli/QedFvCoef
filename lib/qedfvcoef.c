@@ -111,45 +111,46 @@ void _qedfv_integrate(double (*func)(double, void *), void *params, qedfv_contex
                         ctx->int_workspace, &ctx->int_cache, &ctx->int_error);
 }
 
-double _qedfv_rest_accelerated_sum(const double j, const double eta, qedfv_context *ctx)
+double _qedfv_rest_accelerated_sum(const double j, const double eta,
+                                   const unsigned int nmax, qedfv_context *ctx)
 {
   double sum = 0., time;
-  int n0, n1, n2;
+  int n0, n1, n2, inmax = nmax;
 
   time = -_qedfv_ms();
 #pragma omp parallel for collapse(3) reduction(+ : sum)
-  for (n0 = -ctx->nmax; n0 <= ctx->nmax; ++(n0))
-    for (n1 = -ctx->nmax; n1 <= ctx->nmax; ++(n1))
-      for (n2 = -ctx->nmax; n2 <= ctx->nmax; ++(n2))
+  for (n0 = -inmax; n0 <= inmax; ++(n0))
+    for (n1 = -inmax; n1 <= inmax; ++(n1))
+      for (n2 = -inmax; n2 <= inmax; ++(n2))
       {
         ivec3 n = {n0, n1, n2};
         sum += (_qedfv_inorm2(n) != 0) ? _qedfv_rest_summand(n, j, eta) : 0.;
       }
   time += _qedfv_ms();
   _qedfv_debug_printf(ctx, "rest_accelerated_sum, result= %f, nmax= %d, time= %f ms\n",
-                      sum, ctx->nmax, time);
+                      sum, nmax, time);
 
   return sum;
 }
 
 double _qedfv_accelerated_sum(const double j, const dvec3 v, const double eta,
-                              qedfv_context *ctx)
+                              const unsigned int nmax, qedfv_context *ctx)
 {
   double sum = 0., time;
-  int n0, n1, n2;
+  int n0, n1, n2, inmax = nmax;
 
   time = -_qedfv_ms();
 #pragma omp parallel for collapse(3) reduction(+ : sum)
-  for (n0 = -ctx->nmax; n0 <= ctx->nmax; ++(n0))
-    for (n1 = -ctx->nmax; n1 <= ctx->nmax; ++(n1))
-      for (n2 = -ctx->nmax; n2 <= ctx->nmax; ++(n2))
+  for (n0 = -inmax; n0 <= inmax; ++(n0))
+    for (n1 = -inmax; n1 <= inmax; ++(n1))
+      for (n2 = -inmax; n2 <= inmax; ++(n2))
       {
         ivec3 n = {n0, n1, n2};
         sum += (_qedfv_inorm2(n) != 0) ? _qedfv_summand(n, j, v, eta) : 0.;
       }
   time += _qedfv_ms();
   _qedfv_debug_printf(ctx, "accelerated_sum, result= %f, nmax= %d, time= %f ms\n", sum,
-                      ctx->nmax, time);
+                      nmax, time);
 
   return sum;
 }
@@ -159,7 +160,6 @@ qedfv_context *qedfv_create_context(void)
 {
   qedfv_context *ctx = (qedfv_context *)malloc(sizeof(qedfv_context));
   ctx->debug = false;
-  ctx->nmax = 0;
   ctx->j_cache = NAN;
   ctx->int_workspace = gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
 
@@ -198,11 +198,12 @@ double qedfv_rbar(const double j, qedfv_context *ctx)
   return ctx->int_cache;
 }
 
-double qedfv_coef_rest(const double j, const double eta, qedfv_context *ctx)
+double qedfv_coef_rest(const double j, const double eta, const unsigned int nmax,
+                       qedfv_context *ctx)
 {
   double result;
 
-  result = _qedfv_rest_accelerated_sum(j, eta, ctx);
+  result = _qedfv_rest_accelerated_sum(j, eta, nmax, ctx);
   if (j < 3.)
   {
     if (!_qedfv_is_equal(j, ctx->j_cache))
@@ -230,11 +231,12 @@ double qedfv_coef_rest(const double j, const double eta, qedfv_context *ctx)
   return result;
 }
 
-double qedfv_coef(const double j, const dvec3 v, const double eta, qedfv_context *ctx)
+double qedfv_coef(const double j, const dvec3 v, const double eta,
+                  const unsigned int nmax, qedfv_context *ctx)
 {
   double result, a;
 
-  result = _qedfv_accelerated_sum(j, v, eta, ctx);
+  result = _qedfv_accelerated_sum(j, v, eta, nmax, ctx);
   a = _qedfv_A(5. / (j + 2.), v);
   if (j < 3.)
   {
