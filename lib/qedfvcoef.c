@@ -7,14 +7,14 @@
 #include "timer.h"
 
 #ifndef QEDFV_EPSILON
-#define QEDFV_EPSILON 1.e-6
+#define QEDFV_EPSILON 1.e-7
 #endif
 
 #ifndef QEDFV_GSL_INT_LIMIT
 #define QEDFV_GSL_INT_LIMIT 1000
 #endif
 #ifndef QEDFV_GSL_INT_PREC
-#define QEDFV_GSL_INT_PREC 1.0e-7
+#define QEDFV_GSL_INT_PREC QEDFV_EPSILON
 #endif
 
 // private functions /////////////////////////////////////////////////////////////////////
@@ -38,6 +38,12 @@ void _qedfv_debug_printf(qedfv_context *ctx, const char *fmt, ...)
   va_end(args);
 }
 
+void _qedfv_fatal(qedfv_context *ctx)
+{
+  qedfv_destroy_context(ctx);
+  exit(EXIT_FAILURE);
+}
+
 int _qedfv_inorm2(const ivec3 n) { return n[0] * n[0] + n[1] * n[1] + n[2] * n[2]; }
 
 double _qedfv_dnorm2(const dvec3 n) { return n[0] * n[0] + n[1] * n[1] + n[2] * n[2]; }
@@ -58,7 +64,7 @@ double _qedfv_summand(ivec3 n, const double j, const dvec3 v, const double eta)
 {
   double norm = sqrt(_qedfv_inorm2(n));
   dvec3 nhat = {n[0] / norm, n[1] / norm, n[2] / norm};
-  double d = 1. / (1. - nhat[0] * v[0] + nhat[1] * v[1] + nhat[2] * v[2]);
+  double d = 1. / (1. - (nhat[0] * v[0] + nhat[1] * v[1] + nhat[2] * v[2]));
 
   return d * (1. - pow(tanh(sinh(eta * norm * pow(d, -1. / (j + 2.)))), j + 2.)) /
          pow(norm, j);
@@ -90,7 +96,7 @@ double _qedfv_A(const double k, const dvec3 v)
             (-pow(1 - vn, k) * (1 + vn) - (-1 + vn) * pow(1 + vn, k))) /
            ((-1 + k) * vn) / 2;
   }
-  else if (_qedfv_is_equal(k, 1.) && _qedfv_is_equal(vn, 0.))
+  else
   {
     return 1.;
   }
@@ -215,6 +221,11 @@ double qedfv_coef_rest(const double j, const double eta, qedfv_context *ctx)
     }
     result += 4 * M_PI * pow(eta, j - 3.) * ctx->int_cache;
   }
+  else
+  {
+    fprintf(stderr, "error: j = 3 is not implemented");
+    _qedfv_fatal(ctx);
+  }
 
   return result;
 }
@@ -242,6 +253,11 @@ double qedfv_coef(const double j, const dvec3 v, const double eta, qedfv_context
       ctx->int_cache = qedfv_rbar(j, ctx);
     }
     result += 4 * M_PI * a * pow(eta, j - 3.) * ctx->int_cache;
+  }
+  else
+  {
+    fprintf(stderr, "error: j = 3 is not implemented");
+    _qedfv_fatal(ctx);
   }
 
   return result;
