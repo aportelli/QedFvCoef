@@ -2,15 +2,13 @@
 #include <OptParser.hpp>
 #include <cstdio>
 #include <iostream>
+#include <qedfvcoef.hpp>
 #include <sstream>
 #include <vector>
-extern "C"
-{
-#include <qedfvcoef.h>
-}
 
 using namespace optp;
 using namespace std;
+using namespace qedfv;
 
 int main(int argc, const char *argv[])
 {
@@ -18,7 +16,7 @@ int main(int argc, const char *argv[])
   bool parsed, debug, rest = true;
   double j, eta;
   unsigned int nmax;
-  dvec3 v;
+  DVec3 v;
 
   opt.addOption("v", "velocity", OptParser::OptType::value, true,
                 "velocity as comma-separated list (e.g. 0.1,0.2,0.3)");
@@ -38,31 +36,22 @@ int main(int argc, const char *argv[])
   debug = opt.gotOption("d");
   if (opt.gotOption("v"))
   {
-    string buf;
-    stringstream vstr(opt.optionValue("v"));
-    getline(vstr, buf, ',');
-    v[0] = strTo<double>(buf);
-    getline(vstr, buf, ',');
-    v[1] = strTo<double>(buf);
-    getline(vstr, buf, ',');
-    v[2] = strTo<double>(buf);
+    v = strTo<DVec3>(opt.optionValue("v"));
     rest = false;
   }
 
-  qedfv_context *ctx = qedfv_create_context();
-  double coef;
+  double c;
 
-  ctx->debug = debug;
+  QedFvCoef coef(debug);
   if (rest)
   {
-    coef = qedfv_coef_rest(j, eta, nmax, ctx);
+    c = coef(j, eta, nmax);
   }
   else
   {
-    coef = qedfv_coef(j, v, eta, nmax, ctx);
+    c = coef(j, v, eta, nmax);
   }
-  printf("%f\n", coef);
-  qedfv_destroy_context(ctx);
+  cout << c << endl;
 
   return 0;
 }
