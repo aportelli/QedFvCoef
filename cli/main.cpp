@@ -38,7 +38,7 @@ int main(int argc, const char *argv[])
   opt.addOption("v", "velocity", OptParser::OptType::value, true,
                 "velocity as comma-separated list (e.g. 0.1,0.2,0.3)");
   opt.addOption("e", "error", OptParser::OptType::value, true, "target relative error",
-                strFrom(QEDFV_EPSILON));
+                strFrom(QEDFV_DEFAULT_ERROR));
   opt.addOption("p", "parameters", OptParser::OptType::value, true,
                 "algorithm parameters as eta,nmax (e.g. 0.5,50), (default: auto-tuned)");
   opt.addOption("d", "debug", OptParser::OptType::trigger, true, "show debug messages");

@@ -16,11 +16,19 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "qedfvcoef.hpp"
-#include "timer.h"
 #include <cmath>
+#include <exception>
 #include <omp.h>
 
 using namespace qedfv;
+
+// High-resolution timer ///////////////////////////////////////////////////////////////////////////
+double clockMs(void)
+{
+  auto t = std::chrono::high_resolution_clock::now().time_since_epoch();
+  auto d = std::chrono::duration_cast<std::chrono::nanoseconds>(t);
+  return static_cast<double>(d.count()) * 1e-6;
+}
 
 // Public interface ////////////////////////////////////////////////////////////////////////////////
 QedFvCoef::QedFvCoef(const bool debug)
@@ -74,6 +82,10 @@ double QedFvCoef::operator()(const double j, const DVec3 v, const double eta,
 {
   double result, aVal;
 
+  if (norm2(v) >= 1.)
+  {
+    throw std::logic_error("velocity has norm larger than 1");
+  }
   result = acceleratedSum(j, v, eta, nmax);
   aVal = a(5. / (j + 2.), v);
   if (j < 3.)
@@ -132,9 +144,9 @@ double QedFvCoef::r(const double j)
   double time, rj;
 
   Integrand i = [j](double r) { return pow(r, 2. - j) * (1. - pow(tanh(sinh(r)), j + 2.)); };
-  time = -_qedfv_ms();
+  time = -clockMs();
   rj = integrate(i);
-  time += _qedfv_ms();
+  time += clockMs();
   if (debug_)
   {
     printf("[QedFv]: computed R_j, j= %f, R_j= %f, error= %e, time= %f ms\n", j, intCache_,
@@ -149,9 +161,9 @@ double QedFvCoef::rBar(const double j)
   double time, rbarj;
 
   Integrand i = [j](double r) { return pow(r, 2. - j) * pow(tanh(sinh(r)), j + 2.); };
-  time = -_qedfv_ms();
+  time = -clockMs();
   rbarj = integrate(i);
-  time += _qedfv_ms();
+  time += clockMs();
   if (debug_)
   {
     printf("[QedFv]: computed Rbar_j, j= %f, Rbar_j= %f, error= %e, time= %f ms\n", j, intCache_,
@@ -276,7 +288,7 @@ QedFvCoef::Params QedFvCoef::tune(CoefFunc &coef, const double residual, const d
       buf = coef(par);
       res = fabs(buf - previous) / (0.5 * (fabs(buf) + fabs(previous)));
       previous = buf;
-    } while (res > QEDFV_EPSILON);
+    } while (res > QEDFV_DEFAULT_ERROR);
 
     return previous;
   };
@@ -310,7 +322,7 @@ double QedFvCoef::threadedSum(Summand &func, const unsigned int nmax)
   double sum = 0., time;
   int n0, n1, n2, inmax = nmax;
 
-  time = -_qedfv_ms();
+  time = -clockMs();
 #pragma omp parallel for collapse(3) reduction(+ : sum)
   for (n0 = -inmax; n0 <= inmax; ++(n0))
     for (n1 = -inmax; n1 <= inmax; ++(n1))
@@ -319,7 +331,7 @@ double QedFvCoef::threadedSum(Summand &func, const unsigned int nmax)
         IVec3 n = {n0, n1, n2};
         sum += func(n);
       }
-  time += _qedfv_ms();
+  time += clockMs();
   if (debug_)
   {
     printf("[QedFv]: threaded sum, result= %f, nmax= %d, time= %f ms\n", sum, nmax, time);

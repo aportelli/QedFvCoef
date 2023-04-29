@@ -21,14 +21,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <gsl/gsl_integration.h>
 #include <memory>
 
-#ifndef QEDFV_EPSILON
-#define QEDFV_EPSILON 1.e-8
+#ifndef QEDFV_DEFAULT_ERROR
+#define QEDFV_DEFAULT_ERROR 1.e-8
 #endif
 #ifndef QEDFV_GSL_INT_LIMIT
 #define QEDFV_GSL_INT_LIMIT 1000
 #endif
 #ifndef QEDFV_GSL_INT_PREC
-#define QEDFV_GSL_INT_PREC QEDFV_EPSILON
+#define QEDFV_GSL_INT_PREC 1.e-10
 #endif
 
 namespace qedfv
@@ -54,9 +54,11 @@ inline T norm2(const Vec3<T> &v)
 }
 
 // Floating-point equal operator ///////////////////////////////////////////////////////////////////
+constexpr double cmpEps = 1.0e-10;
+
 inline bool isEqual(double a, double b)
 {
-  return fabs(a - b) <= ((fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * QEDFV_EPSILON);
+  return fabs(a - b) <= ((fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * cmpEps);
 }
 
 // Main class //////////////////////////////////////////////////////////////////////////////////////
@@ -79,10 +81,10 @@ public:
   double a(const double k, const DVec3 &v);
   double r(const double j);
   double rBar(const double j);
-  Params tune(const double j, const DVec3 v, const double residual = QEDFV_EPSILON,
+  Params tune(const double j, const DVec3 v, const double residual = QEDFV_DEFAULT_ERROR,
               const double eta0 = 1.0, const double etaFactor = 0.98, const unsigned int nmax0 = 5,
               const unsigned int nmaxStep = 5);
-  Params tune(const double j, const double residual = QEDFV_EPSILON, const double eta0 = 1.0,
+  Params tune(const double j, const double residual = QEDFV_DEFAULT_ERROR, const double eta0 = 1.0,
               const double etaFactor = 0.98, const unsigned int nmax0 = 5,
               const unsigned int nmaxStep = 5);
 
