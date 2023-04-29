@@ -1,6 +1,7 @@
 #pragma once
 
 #include <OptParser.hpp>
+#include <exception>
 #include <qedfvcoef.hpp>
 #include <sstream>
 #include <string>
@@ -15,12 +16,15 @@ inline qedfv::DVec3 strTo<qedfv::DVec3>(const std::string &str)
   std::stringstream vstr(str);
   std::string buf;
 
-  std::getline(vstr, buf, ',');
-  v[0] = strTo<double>(buf);
-  std::getline(vstr, buf, ',');
-  v[1] = strTo<double>(buf);
-  std::getline(vstr, buf, ',');
-  v[2] = strTo<double>(buf);
+  for (unsigned int i = 0; i < 3; ++i)
+  {
+    std::getline(vstr, buf, ',');
+    if (vstr.fail())
+    {
+      throw std::runtime_error("cannot parse vector '" + str + "'");
+    }
+    v[i] = strTo<double>(buf);
+  }
 
   return v;
 }
