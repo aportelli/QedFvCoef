@@ -66,8 +66,7 @@ double QedFvCoef::operator()(const double j, const double eta, const unsigned in
   }
   else
   {
-    fprintf(stderr, "error: j = 3 is not implemented");
-    exit(EXIT_FAILURE);
+    throw std::logic_error("error: j = 3 is not implemented");
   }
 
   return result;
