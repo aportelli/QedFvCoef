@@ -53,6 +53,11 @@ inline T norm2(const Vec3<T> &v)
   return dot(v, v);
 }
 
+DVec3 sphericalToCartesian(const double r, const double theta, const double phi)
+{
+  return {r * cos(phi) * sin(theta), r * sin(phi) * sin(theta), r * cos(theta)};
+}
+
 // Floating-point equal operator ///////////////////////////////////////////////////////////////////
 constexpr double cmpEps = 1.0e-10;
 

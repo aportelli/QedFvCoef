@@ -18,6 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "utils.hpp"
 #include <OptParser.hpp>
 #include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <qedfvcoef.hpp>
 
@@ -25,16 +26,25 @@ using namespace optp;
 using namespace std;
 using namespace qedfv;
 
+struct Coef
+{
+  double theta, phi, c;
+};
+
 int main(int argc, const char *argv[])
 {
   OptParser opt;
-  bool parsed, debug, rest = true, tuned = false;
+  bool parsed, debug, tuned = false;
   double j, error;
-  DVec3 v;
+  double vn;
+  unsigned int nPoints;
   QedFvCoef::Params par;
+  string filename;
 
-  opt.addOption("v", "velocity", OptParser::OptType::value, true,
-                "velocity as comma-separated list (e.g. 0.1,0.2,0.3)");
+  opt.addOption("v", "velocity", OptParser::OptType::value, false, "velocity norm");
+  opt.addOption("n", "npoints", OptParser::OptType::value, false,
+                "number of points for each angle");
+  opt.addOption("o", "output", OptParser::OptType::value, false, "output file");
   opt.addOption("e", "error", OptParser::OptType::value, true, "target relative error",
                 strFrom(QEDFV_DEFAULT_ERROR));
   opt.addOption("p", "parameters", OptParser::OptType::value, true,
@@ -52,42 +62,54 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
-  if (opt.gotOption("v"))
-  {
-    v = opt.optionValue<DVec3>("v");
-    rest = false;
-  }
+  vn = opt.optionValue<double>("v");
+  nPoints = opt.optionValue<unsigned int>("n");
+  filename = opt.optionValue("o");
   if (opt.gotOption("p"))
   {
     par = opt.optionValue<QedFvCoef::Params>("p");
     tuned = true;
   }
 
-  double c;
-
   QedFvCoef coef(debug);
+  double dtheta = M_PI / nPoints, dphi = 2. * M_PI / nPoints;
+  vector<Coef> result(nPoints * nPoints);
+  unsigned int i = 0;
 
-  if (rest)
+  if (!tuned)
   {
-    if (!tuned)
-    {
-      par = coef.tune(j, error);
-    }
-    c = coef(j, par);
+    double c;
+
+    par = coef.tune(j, {vn, 0., 0.}, error);
+    c = coef(j, {vn, 0., 0.}, par);
+    printf("Converged for eta= %.2f, nmax= %d, error= %.2e\n", par.eta, par.nmax, fabs(error * c));
   }
   else
   {
-    if (!tuned)
+    coef(j, {vn, 0., 0.}, par);
+  }
+  for (unsigned int ith = 0; ith < nPoints; ++ith)
+    for (unsigned int iph = 0; iph < nPoints; ++iph)
     {
-      par = coef.tune(j, v, error);
+      result[i].theta = ith * dtheta;
+      result[i].phi = -M_PI + iph * dphi;
+      i++;
     }
-    c = coef(j, v, par);
-  }
-  if (!tuned)
+#pragma omp parallel for
+  for (unsigned int k = 0; k < result.size(); ++k)
   {
-    printf("Converged for eta= %.2f, nmax= %d, error= %.2e\n", par.eta, par.nmax, fabs(error * c));
+    DVec3 v = sphericalToCartesian(vn, result[k].theta, result[k].phi);
+    result[k].c = coef(j, v, par);
   }
-  printf("Coefficient: %.15e\n", c);
+
+  char buf[256];
+  ofstream file(filename);
+  for (unsigned int k = 0; k < result.size(); ++k)
+  {
+    snprintf(buf, 256, "%10f %10f %.15e", result[k].theta, result[k].phi, result[k].c);
+    file << buf << endl;
+  }
+  file.close();
 
   return 0;
 }
