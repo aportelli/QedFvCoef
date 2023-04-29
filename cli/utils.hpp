@@ -46,4 +46,27 @@ inline qedfv::DVec3 strTo<qedfv::DVec3>(const std::string &str)
   return v;
 }
 
+template <>
+inline qedfv::QedFvCoef::Params strTo<qedfv::QedFvCoef::Params>(const std::string &str)
+{
+  qedfv::QedFvCoef::Params par;
+  std::stringstream vstr(str);
+  std::string buf;
+
+  std::getline(vstr, buf, ',');
+  if (vstr.fail())
+  {
+    throw std::runtime_error("cannot parse parameters '" + str + "'");
+  }
+  par.eta = strTo<double>(buf);
+  std::getline(vstr, buf, ',');
+  if (vstr.fail())
+  {
+    throw std::runtime_error("cannot parse parameters '" + str + "'");
+  }
+  par.nmax = strTo<unsigned int>(buf);
+
+  return par;
+}
+
 } // namespace OPT_PARSER_NS

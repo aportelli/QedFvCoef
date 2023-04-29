@@ -30,14 +30,17 @@ using namespace qedfv;
 int main(int argc, const char *argv[])
 {
   OptParser opt;
-  bool parsed, debug, rest = true;
+  bool parsed, debug, rest = true, tuned = false;
   double j, error;
   DVec3 v;
+  QedFvCoef::Params par;
 
   opt.addOption("v", "velocity", OptParser::OptType::value, true,
                 "velocity as comma-separated list (e.g. 0.1,0.2,0.3)");
   opt.addOption("e", "error", OptParser::OptType::value, true, "target relative error",
                 strFrom(QEDFV_EPSILON));
+  opt.addOption("p", "parameters", OptParser::OptType::value, true,
+                "algorithm parameters as eta,nmax (e.g. 0.5,50), (default: auto-tuned)");
   opt.addOption("d", "debug", OptParser::OptType::trigger, true, "show debug messages");
   opt.addOption("", "help", OptParser::OptType::trigger, true, "show this help message and exit");
   parsed = opt.parse(argc, argv);
@@ -56,23 +59,36 @@ int main(int argc, const char *argv[])
     v = opt.optionValue<DVec3>("v");
     rest = false;
   }
+  if (opt.gotOption("p"))
+  {
+    par = opt.optionValue<QedFvCoef::Params>("p");
+    tuned = true;
+  }
 
   double c;
 
   QedFvCoef coef(debug);
-  QedFvCoef::Params par;
 
   if (rest)
   {
-    par = coef.tune(j, error);
+    if (!tuned)
+    {
+      par = coef.tune(j, error);
+    }
     c = coef(j, par);
   }
   else
   {
-    par = coef.tune(j, v, error);
+    if (!tuned)
+    {
+      par = coef.tune(j, v, error);
+    }
     c = coef(j, v, par);
   }
-  printf("Converged for eta= %.2f, nmax= %d, error= %.2e\n", par.eta, par.nmax, fabs(error * c));
+  if (!tuned)
+  {
+    printf("Converged for eta= %.2f, nmax= %d, error= %.2e\n", par.eta, par.nmax, fabs(error * c));
+  }
   printf("Coefficient: %.15e\n", c);
 
   return 0;
