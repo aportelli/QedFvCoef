@@ -1,13 +1,11 @@
 #include "qedfvcoef.hpp"
 #include "timer.h"
 #include <cmath>
-#include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
 #include <omp.h>
 
 using namespace qedfv;
 
+// Public interface ////////////////////////////////////////////////////////////////////////////////
 QedFvCoef::QedFvCoef(const bool debug)
 {
   debug_ = debug;
@@ -49,6 +47,11 @@ double QedFvCoef::operator()(const double j, const double eta, const unsigned in
   return result;
 }
 
+double QedFvCoef::operator()(const double j, const Params par)
+{
+  return (*this)(j, par.eta, par.nmax);
+}
+
 double QedFvCoef::operator()(const double j, const DVec3 v, const double eta,
                              const unsigned int nmax)
 {
@@ -83,51 +86,9 @@ double QedFvCoef::operator()(const double j, const DVec3 v, const double eta,
   return result;
 }
 
-double QedFvCoef::summand(IVec3 n, const double j, const double eta)
+double QedFvCoef::operator()(const double j, const DVec3 v, const Params par)
 {
-  double n2 = norm2(n);
-
-  if (n2 == 0)
-  {
-    return 0.;
-  }
-  else
-  {
-    double norm = sqrt(n2);
-    return (1. - pow(tanh(sinh(eta * norm)), j + 2.)) / pow(norm, j);
-  }
-}
-
-double QedFvCoef::summand(IVec3 n, const double j, const DVec3 v, const double eta)
-{
-  double n2 = norm2(n);
-
-  if (n2 == 0)
-  {
-    return 0.;
-  }
-  else
-  {
-    double norm = sqrt(n2);
-    DVec3 nhat = {n[0] / norm, n[1] / norm, n[2] / norm};
-    double d = 1. / (1. - dot(nhat, v));
-    return d * (1. - pow(tanh(sinh(eta * norm * pow(d, -1. / (j + 2.)))), j + 2.)) / pow(norm, j);
-  }
-}
-
-double QedFvCoef::integrate(Integrand &func)
-{
-  gsl_function gsl_f;
-
-  double (*wrapper)(double, void *) = [](double x, void *func) -> double
-  { return (*static_cast<Integrand *>(func))(x); };
-
-  gsl_f.function = wrapper;
-  gsl_f.params = &func;
-  gsl_integration_qagiu(&gsl_f, 0., 0., QEDFV_GSL_INT_PREC, QEDFV_GSL_INT_LIMIT, intWorkspace_,
-                        &intCache_, &intError_);
-
-  return intCache_;
+  return (*this)(j, v, par.eta, par.nmax);
 }
 
 double QedFvCoef::a(const double k, const DVec3 &v)
@@ -183,6 +144,150 @@ double QedFvCoef::rBar(const double j)
   return rbarj;
 }
 
+QedFvCoef::Params QedFvCoef::tune(const double j, const DVec3 v, const double residual,
+                                  const double eta0, const double etaFactor,
+                                  const unsigned int nmax0, const unsigned int nmaxStep)
+{
+  CoefFunc coef = [this, j, v](Params par) { return (*this)(j, v, par); };
+
+  return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
+}
+
+QedFvCoef::Params QedFvCoef::tune(const double j, const double residual, const double eta0,
+                                  const double etaFactor, const unsigned int nmax0,
+                                  const unsigned int nmaxStep)
+{
+  CoefFunc coef = [this, j](Params par) { return (*this)(j, par); };
+
+  return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
+}
+
+// Private methods /////////////////////////////////////////////////////////////////////////////////
+double QedFvCoef::summand(IVec3 n, const double j, const double eta)
+{
+  double n2 = norm2(n);
+
+  if (n2 == 0)
+  {
+    return 0.;
+  }
+  else
+  {
+    double norm = sqrt(n2);
+    return (1. - pow(tanh(sinh(eta * norm)), j + 2.)) / pow(norm, j);
+  }
+}
+
+double QedFvCoef::summandJ0(IVec3 n, const double eta)
+{
+  double n2 = norm2(n);
+
+  if (n2 == 0)
+  {
+    return 0.;
+  }
+  else
+  {
+    double norm = sqrt(n2);
+    return (1. - pow(tanh(sinh(eta * norm)), 2));
+  }
+}
+
+double QedFvCoef::summand(IVec3 n, const double j, const DVec3 v, const double eta)
+{
+  double n2 = norm2(n);
+
+  if (n2 == 0)
+  {
+    return 0.;
+  }
+  else
+  {
+    double norm = sqrt(n2);
+    DVec3 nhat = {n[0] / norm, n[1] / norm, n[2] / norm};
+    double d = 1. / (1. - dot(nhat, v));
+    return d * (1. - pow(tanh(sinh(eta * norm * pow(d, -1. / (j + 2.)))), j + 2.)) / pow(norm, j);
+  }
+}
+
+double QedFvCoef::summandJ0(IVec3 n, const DVec3 v, const double eta)
+{
+  double n2 = norm2(n);
+
+  if (n2 == 0)
+  {
+    return 0.;
+  }
+  else
+  {
+    double norm = sqrt(n2);
+    DVec3 nhat = {n[0] / norm, n[1] / norm, n[2] / norm};
+    double d = 1. / (1. - dot(nhat, v));
+    return d * (1. - pow(tanh(sinh(eta * norm / sqrt(d))), 2));
+  }
+}
+
+double QedFvCoef::integrate(Integrand &func)
+{
+  gsl_function gsl_f;
+
+  double (*wrapper)(double, void *) = [](double x, void *func) -> double
+  { return (*static_cast<Integrand *>(func))(x); };
+
+  gsl_f.function = wrapper;
+  gsl_f.params = &func;
+  gsl_integration_qagiu(&gsl_f, 0., 0., QEDFV_GSL_INT_PREC, QEDFV_GSL_INT_LIMIT, intWorkspace_,
+                        &intCache_, &intError_);
+
+  return intCache_;
+}
+
+QedFvCoef::Params QedFvCoef::tune(CoefFunc &coef, const double residual, const double eta0,
+                                  const double etaFactor, const unsigned int nmax0,
+                                  const unsigned int nmaxStep)
+{
+  Params par;
+  double previous, buf, res;
+
+  auto converge = [&coef, nmaxStep](Params &par)
+  {
+    double previous = coef(par);
+    double buf, res;
+    do
+    {
+      par.nmax += nmaxStep;
+      buf = coef(par);
+      res = fabs(buf - previous) / (0.5 * (fabs(buf) + fabs(previous)));
+      previous = buf;
+    } while (res > QEDFV_EPSILON);
+
+    return previous;
+  };
+
+  par.eta = eta0;
+  par.nmax = nmax0;
+  previous = converge(par);
+  if (debug_)
+  {
+    printf("[QedFv]: eta= %.2f, nmax= %d, c= %.15e\n", par.eta, par.nmax, previous);
+  }
+  do
+  {
+    par.eta *= etaFactor;
+    par.nmax = (par.nmax > 10) ? (par.nmax - 10) : par.nmax;
+    buf = converge(par);
+    res = fabs(buf - previous) / (0.5 * (fabs(buf) + fabs(previous)));
+    previous = buf;
+    if (debug_)
+    {
+      printf("[QedFv]: eta= %.2f, nmax= %d, c= %.15e, residual= %.2e\n", par.eta, par.nmax, buf,
+             res);
+    }
+  } while (res > residual);
+
+  return par;
+}
+
 double QedFvCoef::threadedSum(Summand &func, const unsigned int nmax)
 {
   double sum = 0., time;
@@ -209,8 +314,16 @@ double QedFvCoef::threadedSum(Summand &func, const unsigned int nmax)
 double QedFvCoef::acceleratedSum(const double j, const double eta, const unsigned int nmax)
 {
   double sum;
+  Summand wrapper;
 
-  Summand wrapper = [this, j, eta](const IVec3 &n) { return summand(n, j, eta); };
+  if (isEqual(j, 0.))
+  {
+    wrapper = [this, eta](const IVec3 &n) { return summandJ0(n, eta); };
+  }
+  else
+  {
+    wrapper = [this, j, eta](const IVec3 &n) { return summand(n, j, eta); };
+  }
   sum = threadedSum(wrapper, nmax);
 
   return sum;
@@ -220,8 +333,16 @@ double QedFvCoef::acceleratedSum(const double j, const DVec3 v, const double eta
                                  const unsigned int nmax)
 {
   double sum;
+  Summand wrapper;
 
-  Summand wrapper = [this, j, v, eta](const IVec3 &n) { return summand(n, j, v, eta); };
+  if (isEqual(j, 0.))
+  {
+    wrapper = [this, v, eta](const IVec3 &n) { return summandJ0(n, v, eta); };
+  }
+  else
+  {
+    wrapper = [this, j, v, eta](const IVec3 &n) { return summand(n, j, v, eta); };
+  }
   sum = threadedSum(wrapper, nmax);
 
   return sum;
