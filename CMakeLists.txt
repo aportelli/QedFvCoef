@@ -3,7 +3,9 @@ project(QedFvCoef VERSION 0.1.0 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)
+include(FetchContent)
 enable_testing()
+set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/deps)
 
 find_package(Git REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -21,3 +23,4 @@ endif()
 
 add_subdirectory(lib)
 add_subdirectory(cli)
+add_subdirectory(python)
