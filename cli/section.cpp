@@ -20,7 +20,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <cstdio>
 #include <fstream>
 #include <iostream>
-#include <random>
 #include <qedfvcoef.hpp>
 
 using namespace optp;
@@ -40,6 +39,7 @@ int main(int argc, const char *argv[])
   double vn;
   unsigned int nPoints;
   QedFvCoef::Params par;
+  QedFvCoef::Qed qed;
   string filename;
 
   opt.addOption("v", "velocity", OptParser::OptType::value, false, "velocity norm");
@@ -50,6 +50,8 @@ int main(int argc, const char *argv[])
                 strFrom(QEDFV_DEFAULT_ERROR));
   opt.addOption("p", "parameters", OptParser::OptType::value, true,
                 "algorithm parameters as eta,nmax (e.g. 0.5,50), (default: auto-tuned)");
+  opt.addOption("q", "qed", OptParser::OptType::value, true,
+                "QED theory to use, 'x' for QED_x, possible choices are L,r", "L");
   opt.addOption("d", "debug", OptParser::OptType::trigger, true, "show debug messages");
   opt.addOption("", "help", OptParser::OptType::trigger, true, "show this help message and exit");
   parsed = opt.parse(argc, argv);
@@ -63,6 +65,7 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
+  qed = opt.optionValue<QedFvCoef::Qed>("q");
   vn = opt.optionValue<double>("v");
   nPoints = opt.optionValue<unsigned int>("n");
   filename = opt.optionValue("o");
@@ -72,7 +75,7 @@ int main(int argc, const char *argv[])
     tuned = true;
   }
 
-  QedFvCoef coef(debug);
+  QedFvCoef coef(qed, debug);
   double phiMin = 0., phiMax = 0.25 * M_PI;
   double dphi = (phiMax - phiMin) / nPoints;
   double thetaMin = 0., thetaMax = 0.5 * M_PI;
@@ -95,9 +98,9 @@ int main(int argc, const char *argv[])
   for (unsigned int iph = 0; iph < nPoints; ++iph)
   {
     sphi = sin(dphi * iph);
-    thetaMin = -2. * atan(sphi - sqrt(1. + pow(sphi,2.)));
+    thetaMin = -2. * atan(sphi - sqrt(1. + pow(sphi, 2.)));
 
-    for (double ith = thetaMin; ith <= thetaMax; ith+=dphi)
+    for (double ith = thetaMin; ith <= thetaMax; ith += dphi)
     {
       result[i].phi = phiMin + iph * dphi;
       result[i].theta = ith;

@@ -65,9 +65,7 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
-  std::cout << opt.optionValue("q") << std::endl;
   qed = opt.optionValue<QedFvCoef::Qed>("q");
-
   vn = opt.optionValue<double>("v");
   nPoints = opt.optionValue<unsigned int>("n");
   filename = opt.optionValue("o");
