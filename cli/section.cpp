@@ -1,5 +1,7 @@
 /*
-Copyright © 2023 Antonin Portelli <antonin.portelli@me.com>
+Copyright © 2023
+Matteo Di Carlo <matteo.dicarlo93@gmail.com>
+Antonin Portelli <antonin.portelli@me.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
