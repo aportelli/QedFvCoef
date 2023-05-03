@@ -39,6 +39,7 @@ int main(int argc, const char *argv[])
   double vn;
   unsigned int nPoints;
   QedFvCoef::Params par;
+  QedFvCoef::Qed qed;
   string filename;
 
   opt.addOption("v", "velocity", OptParser::OptType::value, false, "velocity norm");
@@ -49,6 +50,8 @@ int main(int argc, const char *argv[])
                 strFrom(QEDFV_DEFAULT_ERROR));
   opt.addOption("p", "parameters", OptParser::OptType::value, true,
                 "algorithm parameters as eta,nmax (e.g. 0.5,50), (default: auto-tuned)");
+  opt.addOption("q", "qed", OptParser::OptType::value, true,
+                "QED theory to use, 'x' for QED_x, possible choices are L,r", "L");
   opt.addOption("d", "debug", OptParser::OptType::trigger, true, "show debug messages");
   opt.addOption("", "help", OptParser::OptType::trigger, true, "show this help message and exit");
   parsed = opt.parse(argc, argv);
@@ -62,6 +65,9 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
+  std::cout << opt.optionValue("q") << std::endl;
+  qed = opt.optionValue<QedFvCoef::Qed>("q");
+
   vn = opt.optionValue<double>("v");
   nPoints = opt.optionValue<unsigned int>("n");
   filename = opt.optionValue("o");
@@ -71,7 +77,7 @@ int main(int argc, const char *argv[])
     tuned = true;
   }
 
-  QedFvCoef coef(debug);
+  QedFvCoef coef(qed, debug);
   double dtheta = M_PI / nPoints, dphi = 2. * M_PI / nPoints;
   vector<Coef> result(nPoints * nPoints);
   unsigned int i = 0;

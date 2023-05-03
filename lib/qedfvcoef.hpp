@@ -19,7 +19,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <array>
 #include <functional>
 #include <gsl/gsl_integration.h>
+#include <map>
 #include <memory>
+#include <string>
 
 #ifndef QEDFV_DEFAULT_ERROR
 #define QEDFV_DEFAULT_ERROR 1.e-8
@@ -76,13 +78,25 @@ public:
     unsigned int nmax;
   };
 
+  enum class Qed
+  {
+    L,
+    r
+  };
+
 public:
-  QedFvCoef(const bool debug = false);
+  QedFvCoef(const Qed qed = Qed::L, const bool debug = false);
   ~QedFvCoef(void);
+  void setDebug(const bool debug = true);
+  void setQed(const Qed qed);
+  bool isDebug(void) const;
+  Qed getQed(void) const;
+  static Qed parseQed(const std::string str);
   double operator()(const double j, const double eta, const unsigned int nmax);
   double operator()(const double j, const Params par);
   double operator()(const double j, const DVec3 v, const double eta, const unsigned int nmax);
   double operator()(const double j, const DVec3 v, const Params par);
+  double qedrTerm(const DVec3 v);
   double a(const double k, const DVec3 &v);
   double r(const double j);
   double rBar(const double j);
@@ -112,8 +126,10 @@ private:
 
 private:
   bool debug_{false};
+  Qed qed_{Qed::L};
   double jCache_, intCache_, intError_;
   gsl_integration_workspace *intWorkspace_;
+  static const std::map<std::string, Qed> qedMap;
 };
 
 } // namespace qedfv

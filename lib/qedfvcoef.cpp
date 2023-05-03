@@ -23,6 +23,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 using namespace qedfv;
 
+const std::map<std::string, QedFvCoef::Qed> QedFvCoef::qedMap = {{"L", Qed::L}, {"r", Qed::r}};
+
 // High-resolution timer ///////////////////////////////////////////////////////////////////////////
 double clockMs(void)
 {
@@ -32,41 +34,67 @@ double clockMs(void)
 }
 
 // Public interface ////////////////////////////////////////////////////////////////////////////////
-QedFvCoef::QedFvCoef(const bool debug)
+QedFvCoef::QedFvCoef(const QedFvCoef::Qed qed, const bool debug)
 {
-  debug_ = debug;
+  setDebug(debug);
+  setQed(qed);
   jCache_ = std::nan("");
   intWorkspace_ = gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
 }
 
 QedFvCoef::~QedFvCoef(void) { gsl_integration_workspace_free(intWorkspace_); }
 
+void QedFvCoef::setDebug(const bool debug) { debug_ = debug; }
+
+void QedFvCoef::setQed(const Qed qed) { qed_ = qed; }
+
+bool QedFvCoef::isDebug(void) const { return debug_; }
+
+QedFvCoef::Qed QedFvCoef::getQed(void) const { return qed_; }
+
+QedFvCoef::Qed QedFvCoef::parseQed(const std::string str) { return qedMap.at(str); }
+
 double QedFvCoef::operator()(const double j, const double eta, const unsigned int nmax)
 {
   double result;
 
-  result = acceleratedSum(j, eta, nmax);
-  if (j < 3.)
+  if (!isEqual(j, 0.))
   {
-    if (!isEqual(j, jCache_))
+    result = acceleratedSum(j, eta, nmax);
+    if (j < 3.)
     {
-      jCache_ = j;
-      intCache_ = r(j);
+      if (!isEqual(j, jCache_))
+      {
+        jCache_ = j;
+        intCache_ = r(j);
+      }
+      result -= 4 * M_PI * pow(eta, j - 3.) * intCache_;
     }
-    result -= 4 * M_PI * pow(eta, j - 3.) * intCache_;
-  }
-  else if (j > 3.)
-  {
-    if (!isEqual(j, jCache_))
+    else if (j > 3.)
     {
-      jCache_ = j;
-      intCache_ = rBar(j);
+      if (!isEqual(j, jCache_))
+      {
+        jCache_ = j;
+        intCache_ = rBar(j);
+      }
+      result += 4 * M_PI * pow(eta, j - 3.) * intCache_;
     }
-    result += 4 * M_PI * pow(eta, j - 3.) * intCache_;
+    else
+    {
+      throw std::logic_error("error: j = 3 is not implemented");
+    }
   }
   else
   {
-    throw std::logic_error("error: j = 3 is not implemented");
+    result = -1.;
+  }
+  switch (getQed())
+  {
+  case Qed::r:
+    result += 1.;
+    break;
+  default:
+    break;
   }
 
   return result;
@@ -110,6 +138,14 @@ double QedFvCoef::operator()(const double j, const DVec3 v, const double eta,
   {
     throw std::logic_error("error: j = 3 is not implemented");
   }
+  switch (getQed())
+  {
+  case Qed::r:
+    result += qedrTerm(v);
+    break;
+  default:
+    break;
+  }
 
   return result;
 }
@@ -117,6 +153,18 @@ double QedFvCoef::operator()(const double j, const DVec3 v, const double eta,
 double QedFvCoef::operator()(const double j, const DVec3 v, const Params par)
 {
   return (*this)(j, v, par.eta, par.nmax);
+}
+
+double QedFvCoef::qedrTerm(const DVec3 v)
+{
+  double term = 0.;
+
+  for (const double &vj : v)
+  {
+    term += 1. / (1 + vj) + 1. / (1 - vj);
+  }
+
+  return term / 6.;
 }
 
 double QedFvCoef::a(const double k, const DVec3 &v)
@@ -146,7 +194,7 @@ double QedFvCoef::r(const double j)
   time = -clockMs();
   rj = integrate(i);
   time += clockMs();
-  if (debug_)
+  if (isDebug())
   {
     printf("[QedFv]: computed R_j, j= %f, R_j= %f, error= %e, time= %f ms\n", j, intCache_,
            intError_, time);
@@ -163,7 +211,7 @@ double QedFvCoef::rBar(const double j)
   time = -clockMs();
   rbarj = integrate(i);
   time += clockMs();
-  if (debug_)
+  if (isDebug())
   {
     printf("[QedFv]: computed Rbar_j, j= %f, Rbar_j= %f, error= %e, time= %f ms\n", j, intCache_,
            intError_, time);
@@ -295,7 +343,7 @@ QedFvCoef::Params QedFvCoef::tune(CoefFunc &coef, const double residual, const d
   par.eta = eta0;
   par.nmax = nmax0;
   previous = converge(par);
-  if (debug_)
+  if (isDebug())
   {
     printf("[QedFv]: eta= %.2f, nmax= %d, c= %.15e\n", par.eta, par.nmax, previous);
   }
@@ -306,7 +354,7 @@ QedFvCoef::Params QedFvCoef::tune(CoefFunc &coef, const double residual, const d
     buf = converge(par);
     res = fabs(buf - previous) / (0.5 * (fabs(buf) + fabs(previous)));
     previous = buf;
-    if (debug_)
+    if (isDebug())
     {
       printf("[QedFv]: eta= %.2f, nmax= %d, c= %.15e, residual= %.2e\n", par.eta, par.nmax, buf,
              res);
@@ -331,7 +379,7 @@ double QedFvCoef::threadedSum(Summand &func, const unsigned int nmax)
         sum += func(n);
       }
   time += clockMs();
-  if (debug_)
+  if (isDebug())
   {
     printf("[QedFv]: threaded sum, result= %f, nmax= %d, time= %f ms\n", sum, nmax, time);
   }

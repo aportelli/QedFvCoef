@@ -32,6 +32,7 @@ int main(int argc, const char *argv[])
   double j, error;
   DVec3 v;
   QedFvCoef::Params par;
+  QedFvCoef::Qed qed;
 
   opt.addOption("v", "velocity", OptParser::OptType::value, true,
                 "velocity as comma-separated list (e.g. 0.1,0.2,0.3)");
@@ -39,6 +40,8 @@ int main(int argc, const char *argv[])
                 strFrom(QEDFV_DEFAULT_ERROR));
   opt.addOption("p", "parameters", OptParser::OptType::value, true,
                 "algorithm parameters as eta,nmax (e.g. 0.5,50), (default: auto-tuned)");
+  opt.addOption("q", "qed", OptParser::OptType::value, true,
+                "QED theory to use, 'x' for QED_x, possible choices are L,r", "L");
   opt.addOption("d", "debug", OptParser::OptType::trigger, true, "show debug messages");
   opt.addOption("", "help", OptParser::OptType::trigger, true, "show this help message and exit");
   parsed = opt.parse(argc, argv);
@@ -52,6 +55,7 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
+  qed = opt.optionValue<QedFvCoef::Qed>("q");
   if (opt.gotOption("v"))
   {
     v = opt.optionValue<DVec3>("v");
@@ -65,7 +69,7 @@ int main(int argc, const char *argv[])
 
   double c;
 
-  QedFvCoef coef(debug);
+  QedFvCoef coef(qed, debug);
 
   if (rest)
   {

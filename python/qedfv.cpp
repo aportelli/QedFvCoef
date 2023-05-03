@@ -11,10 +11,17 @@ PYBIND11_MODULE(qedfv, m)
   py::class_<QedFvCoef::Params>(m, "CoefParameters")
       .def(py::init<>())
       .def_readwrite("eta", &QedFvCoef::Params::eta)
-      .def_readwrite("nmax", &QedFvCoef::Params::nmax);
+      .def_readwrite("nmax", &QedFvCoef::Params::nmax)
+      .def("__repr__",
+           [](const QedFvCoef::Params &p) {
+             return "{ eta: " + std::to_string(p.eta) + ", nmax: " + std::to_string(p.nmax) + " }";
+           });
+
+  py::enum_<QedFvCoef::Qed>(m, "Qed").value("L", QedFvCoef::Qed::L).value("r", QedFvCoef::Qed::r);
 
   py::class_<QedFvCoef>(m, "Coef")
-      .def(py::init<const bool>(), "debug"_a = false)
+      .def(py::init<const QedFvCoef::Qed, const bool>(), "qed"_a = QedFvCoef::Qed::L,
+           "debug"_a = false)
       .def("__call__",
            static_cast<double (QedFvCoef::*)(const double, const double, const unsigned int)>(
                &QedFvCoef::operator()))

@@ -69,4 +69,10 @@ inline qedfv::QedFvCoef::Params strTo<qedfv::QedFvCoef::Params>(const std::strin
   return par;
 }
 
+template <>
+inline qedfv::QedFvCoef::Qed strTo<qedfv::QedFvCoef::Qed>(const std::string &str)
+{
+  return qedfv::QedFvCoef::parseQed(str);
+}
+
 } // namespace OPT_PARSER_NS
