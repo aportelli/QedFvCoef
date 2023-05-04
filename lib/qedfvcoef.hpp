@@ -100,11 +100,16 @@ public:
   double a(const double k, const DVec3 &v);
   double r(const double j);
   double rBar(const double j);
+  Params tune(const double j, const double residual = QEDFV_DEFAULT_ERROR, const double eta0 = 1.0,
+              const double etaFactor = 0.98, const unsigned int nmax0 = 5,
+              const unsigned int nmaxStep = 5);
+  Params tune(const double j, const Params par, const double residual = QEDFV_DEFAULT_ERROR,
+              const double etaFactor = 0.98, const unsigned int nmaxStep = 5);
   Params tune(const double j, const DVec3 v, const double residual = QEDFV_DEFAULT_ERROR,
               const double eta0 = 1.0, const double etaFactor = 0.98, const unsigned int nmax0 = 5,
               const unsigned int nmaxStep = 5);
-  Params tune(const double j, const double residual = QEDFV_DEFAULT_ERROR, const double eta0 = 1.0,
-              const double etaFactor = 0.98, const unsigned int nmax0 = 5,
+  Params tune(const double j, const DVec3 v, const Params par,
+              const double residual = QEDFV_DEFAULT_ERROR, const double etaFactor = 0.98,
               const unsigned int nmaxStep = 5);
 
 private:

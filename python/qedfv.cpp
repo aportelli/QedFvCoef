@@ -43,9 +43,21 @@ PYBIND11_MODULE(qedfv, m)
            "j"_a, "residual"_a = QEDFV_DEFAULT_ERROR, "eta0"_a = 1.0, "etaFactor"_a = 0.98,
            "nmax0"_a = 5, "nmaxStep"_a = 5)
       .def("tune",
+           static_cast<QedFvCoef::Params (QedFvCoef::*)(const double, const QedFvCoef::Params,
+                                                        const double, const double,
+                                                        const unsigned int)>(&QedFvCoef::tune),
+           "j"_a, "par"_a, "residual"_a = QEDFV_DEFAULT_ERROR, "etaFactor"_a = 0.98,
+           "nmaxStep"_a = 5)
+      .def("tune",
            static_cast<QedFvCoef::Params (QedFvCoef::*)(
                const double, const DVec3, const double, const double, const double,
                const unsigned int, const unsigned int)>(&QedFvCoef::tune),
            "j"_a, "v"_a, "residual"_a = QEDFV_DEFAULT_ERROR, "eta0"_a = 1.0, "etaFactor"_a = 0.98,
-           "nmax0"_a = 5, "nmaxStep"_a = 5);
+           "nmax0"_a = 5, "nmaxStep"_a = 5)
+      .def("tune",
+           static_cast<QedFvCoef::Params (QedFvCoef::*)(
+               const double, const DVec3, const QedFvCoef::Params, const double, const double,
+               const unsigned int)>(&QedFvCoef::tune),
+           "j"_a, "v"_a, "par"_a, "residual"_a = QEDFV_DEFAULT_ERROR, "etaFactor"_a = 0.98,
+           "nmaxStep"_a = 5);
 }

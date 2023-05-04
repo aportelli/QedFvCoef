@@ -220,6 +220,23 @@ double QedFvCoef::rBar(const double j)
   return rbarj;
 }
 
+QedFvCoef::Params QedFvCoef::tune(const double j, const double residual, const double eta0,
+                                  const double etaFactor, const unsigned int nmax0,
+                                  const unsigned int nmaxStep)
+{
+  CoefFunc coef = [this, j](Params par) { return (*this)(j, par); };
+
+  return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
+}
+
+QedFvCoef::Params QedFvCoef::tune(const double j, const Params par, const double residual,
+                                  const double etaFactor, const unsigned int nmaxStep)
+{
+  CoefFunc coef = [this, j](Params par) { return (*this)(j, par); };
+
+  return tune(coef, residual, par.eta, etaFactor, par.nmax, nmaxStep);
+}
+
 QedFvCoef::Params QedFvCoef::tune(const double j, const DVec3 v, const double residual,
                                   const double eta0, const double etaFactor,
                                   const unsigned int nmax0, const unsigned int nmaxStep)
@@ -229,13 +246,13 @@ QedFvCoef::Params QedFvCoef::tune(const double j, const DVec3 v, const double re
   return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
 }
 
-QedFvCoef::Params QedFvCoef::tune(const double j, const double residual, const double eta0,
-                                  const double etaFactor, const unsigned int nmax0,
+QedFvCoef::Params QedFvCoef::tune(const double j, const DVec3 v, const Params par,
+                                  const double residual, const double etaFactor,
                                   const unsigned int nmaxStep)
 {
-  CoefFunc coef = [this, j](Params par) { return (*this)(j, par); };
+  CoefFunc coef = [this, j, v](Params par) { return (*this)(j, v, par); };
 
-  return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
+  return tune(coef, residual, par.eta, etaFactor, par.nmax, nmaxStep);
 }
 
 // Private methods /////////////////////////////////////////////////////////////////////////////////
