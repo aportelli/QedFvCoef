@@ -22,6 +22,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include <qedfvcoef.hpp>
 
 using namespace optp;
@@ -81,7 +82,7 @@ int main(int argc, const char *argv[])
   double phiMin = 0., phiMax = 0.25 * M_PI;
   double dphi = (phiMax - phiMin) / nPoints;
   double thetaMin = 0., thetaMax = 0.5 * M_PI;
-  vector<Coef> result(nPoints * nPoints);
+  vector<Coef> result(nPoints * nPoints), unfold;
   double sphi = 0.;
   unsigned int i = 0;
 
@@ -118,6 +119,29 @@ int main(int argc, const char *argv[])
     result[k].c = coef(j, v, par);
   }
 
+  for (unsigned int k = 0; k < result.size(); ++k)
+  {
+    DVec3 v = sphericalToCartesian(vn, result[k].theta, result[k].phi);
+    sort(v.begin(), v.end());
+    do
+    {
+      for (unsigned int i = 0; i < 1 << v.size(); ++i)
+      {
+        DVec3 w = v;
+        for (unsigned int j = 0; j < v.size(); ++j)
+        {
+          if ((i >> j) & 1)
+          {
+            w[j] = -w[j];
+          }
+        }
+        DVec3 vs = CartesianToSpherical(w[0], w[1], w[2]);
+        Coef tmp = {vs[1], vs[2], result[k].c};
+        unfold.push_back(tmp);
+      }
+    } while (next_permutation(v.begin(), v.end()));
+  }
+
   char buf[256];
   ofstream file(filename);
   for (unsigned int k = 0; k < result.size(); ++k)
@@ -126,6 +150,14 @@ int main(int argc, const char *argv[])
     file << buf << endl;
   }
   file.close();
+
+  ofstream file2("unfold_" + filename);
+  for (unsigned int k = 0; k < unfold.size(); ++k)
+  {
+    snprintf(buf, 256, "%10f %10f %.15e", unfold[k].theta, unfold[k].phi, unfold[k].c);
+    file2 << buf << endl;
+  }
+  file2.close();
 
   return 0;
 }
