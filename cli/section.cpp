@@ -82,7 +82,7 @@ int main(int argc, const char *argv[])
   double phiMin = 0., phiMax = 0.25 * M_PI;
   double dphi = (phiMax - phiMin) / nPoints;
   double thetaMin = 0., thetaMax = 0.5 * M_PI;
-  vector<Coef> result(nPoints * nPoints), unfold;
+  vector<Coef> result(nPoints * nPoints);
   double sphi = 0.;
   unsigned int i = 0;
 
@@ -119,6 +119,9 @@ int main(int argc, const char *argv[])
     result[k].c = coef(j, v, par);
   }
 
+  vector<Coef> unfold(i * 48);
+  unsigned int r = 0;
+
   for (unsigned int k = 0; k < result.size(); ++k)
   {
     DVec3 v = sphericalToCartesian(vn, result[k].theta, result[k].phi);
@@ -136,11 +139,13 @@ int main(int argc, const char *argv[])
           }
         }
         DVec3 vs = CartesianToSpherical(w[0], w[1], w[2]);
-        Coef tmp = {vs[1], vs[2], result[k].c};
-        unfold.push_back(tmp);
+        unfold[r] = {vs[1], vs[2], result[k].c};
+        r++;
       }
     } while (next_permutation(v.begin(), v.end()));
   }
+
+  unfold.resize(r);
 
   char buf[256];
   ofstream file(filename);
