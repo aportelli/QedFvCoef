@@ -19,7 +19,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <OptParser.hpp>
 #include <cstdio>
 #include <iostream>
-#include <qedfvcoef.hpp>
+#include <qedfv/coef.hpp>
 
 using namespace optp;
 using namespace std;

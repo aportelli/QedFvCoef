@@ -1,12 +1,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <qedfvcoef.hpp>
+#include <qedfv/coef.hpp>
 
 namespace py = pybind11;
 using namespace qedfv;
 using namespace pybind11::literals;
 
-PYBIND11_MODULE(qedfv, m)
+PYBIND11_MODULE(pyqedfv, m)
 {
   py::class_<QedFvCoef::Params>(m, "CoefParameters")
       .def(py::init<>())
