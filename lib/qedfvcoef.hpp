@@ -60,6 +60,11 @@ DVec3 sphericalToCartesian(const double r, const double theta, const double phi)
   return {r * cos(phi) * sin(theta), r * sin(phi) * sin(theta), r * cos(theta)};
 }
 
+DVec3 CartesianToSpherical(const double x, const double y, const double z)
+{
+  return {sqrt(x*x + y*y + z*z), atan2(sqrt(x*x + y*y), z), atan2(y, x)};
+}
+
 // Floating-point equal operator ///////////////////////////////////////////////////////////////////
 constexpr double cmpEps = 1.0e-10;
 
