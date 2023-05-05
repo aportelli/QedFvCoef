@@ -47,9 +47,9 @@ inline qedfv::DVec3 strTo<qedfv::DVec3>(const std::string &str)
 }
 
 template <>
-inline qedfv::QedFvCoef::Params strTo<qedfv::QedFvCoef::Params>(const std::string &str)
+inline qedfv::Coef::Params strTo<qedfv::Coef::Params>(const std::string &str)
 {
-  qedfv::QedFvCoef::Params par;
+  qedfv::Coef::Params par;
   std::stringstream vstr(str);
   std::string buf;
 
@@ -70,9 +70,9 @@ inline qedfv::QedFvCoef::Params strTo<qedfv::QedFvCoef::Params>(const std::strin
 }
 
 template <>
-inline qedfv::QedFvCoef::Qed strTo<qedfv::QedFvCoef::Qed>(const std::string &str)
+inline qedfv::Coef::Qed strTo<qedfv::Coef::Qed>(const std::string &str)
 {
-  return qedfv::QedFvCoef::parseQed(str);
+  return qedfv::Coef::parseQed(str);
 }
 
 } // namespace OPT_PARSER_NS

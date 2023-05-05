@@ -8,56 +8,56 @@ using namespace pybind11::literals;
 
 PYBIND11_MODULE(pyqedfv, m)
 {
-  py::class_<QedFvCoef::Params>(m, "CoefParameters")
+  py::class_<Coef::Params>(m, "CoefParameters")
       .def(py::init<>())
-      .def_readwrite("eta", &QedFvCoef::Params::eta)
-      .def_readwrite("nmax", &QedFvCoef::Params::nmax)
+      .def_readwrite("eta", &Coef::Params::eta)
+      .def_readwrite("nmax", &Coef::Params::nmax)
       .def("__repr__",
-           [](const QedFvCoef::Params &p) {
+           [](const Coef::Params &p) {
              return "{ eta: " + std::to_string(p.eta) + ", nmax: " + std::to_string(p.nmax) + " }";
            });
 
-  py::enum_<QedFvCoef::Qed>(m, "Qed").value("L", QedFvCoef::Qed::L).value("r", QedFvCoef::Qed::r);
+  py::enum_<Coef::Qed>(m, "Qed").value("L", Coef::Qed::L).value("r", Coef::Qed::r);
 
-  py::class_<QedFvCoef>(m, "Coef")
-      .def(py::init<const QedFvCoef::Qed, const bool>(), "qed"_a = QedFvCoef::Qed::L,
+  py::class_<Coef>(m, "Coef")
+      .def(py::init<const Coef::Qed, const bool>(), "qed"_a = Coef::Qed::L,
            "debug"_a = false)
       .def("__call__",
-           static_cast<double (QedFvCoef::*)(const double, const double, const unsigned int)>(
-               &QedFvCoef::operator()))
+           static_cast<double (Coef::*)(const double, const double, const unsigned int)>(
+               &Coef::operator()))
       .def("__call__",
-           static_cast<double (QedFvCoef::*)(const double, const DVec3, const double,
-                                             const unsigned int)>(&QedFvCoef::operator()))
-      .def("__call__", static_cast<double (QedFvCoef::*)(const double, const QedFvCoef::Params)>(
-                           &QedFvCoef::operator()))
+           static_cast<double (Coef::*)(const double, const DVec3, const double,
+                                             const unsigned int)>(&Coef::operator()))
+      .def("__call__", static_cast<double (Coef::*)(const double, const Coef::Params)>(
+                           &Coef::operator()))
       .def("__call__",
-           static_cast<double (QedFvCoef::*)(const double, const DVec3, const QedFvCoef::Params)>(
-               &QedFvCoef::operator()))
-      .def("a", &QedFvCoef::a)
-      .def("r", &QedFvCoef::r)
-      .def("rBar", &QedFvCoef::rBar)
+           static_cast<double (Coef::*)(const double, const DVec3, const Coef::Params)>(
+               &Coef::operator()))
+      .def("a", &Coef::a)
+      .def("r", &Coef::r)
+      .def("rBar", &Coef::rBar)
       .def("tune",
-           static_cast<QedFvCoef::Params (QedFvCoef::*)(const double, const double, const double,
+           static_cast<Coef::Params (Coef::*)(const double, const double, const double,
                                                         const double, const unsigned int,
-                                                        const unsigned int)>(&QedFvCoef::tune),
+                                                        const unsigned int)>(&Coef::tune),
            "j"_a, "residual"_a = QEDFV_DEFAULT_ERROR, "eta0"_a = 1.0, "etaFactor"_a = 0.98,
            "nmax0"_a = 5, "nmaxStep"_a = 5)
       .def("tune",
-           static_cast<QedFvCoef::Params (QedFvCoef::*)(const double, const QedFvCoef::Params,
+           static_cast<Coef::Params (Coef::*)(const double, const Coef::Params,
                                                         const double, const double,
-                                                        const unsigned int)>(&QedFvCoef::tune),
+                                                        const unsigned int)>(&Coef::tune),
            "j"_a, "par"_a, "residual"_a = QEDFV_DEFAULT_ERROR, "etaFactor"_a = 0.98,
            "nmaxStep"_a = 5)
       .def("tune",
-           static_cast<QedFvCoef::Params (QedFvCoef::*)(
+           static_cast<Coef::Params (Coef::*)(
                const double, const DVec3, const double, const double, const double,
-               const unsigned int, const unsigned int)>(&QedFvCoef::tune),
+               const unsigned int, const unsigned int)>(&Coef::tune),
            "j"_a, "v"_a, "residual"_a = QEDFV_DEFAULT_ERROR, "eta0"_a = 1.0, "etaFactor"_a = 0.98,
            "nmax0"_a = 5, "nmaxStep"_a = 5)
       .def("tune",
-           static_cast<QedFvCoef::Params (QedFvCoef::*)(
-               const double, const DVec3, const QedFvCoef::Params, const double, const double,
-               const unsigned int)>(&QedFvCoef::tune),
+           static_cast<Coef::Params (Coef::*)(
+               const double, const DVec3, const Coef::Params, const double, const double,
+               const unsigned int)>(&Coef::tune),
            "j"_a, "v"_a, "par"_a, "residual"_a = QEDFV_DEFAULT_ERROR, "etaFactor"_a = 0.98,
            "nmaxStep"_a = 5);
 }

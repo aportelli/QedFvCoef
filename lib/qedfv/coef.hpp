@@ -22,6 +22,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <gsl/gsl_integration.h>
 #include <map>
+#include <qedfv/global.hpp>
 #include <qedfv/vectorutils.hpp>
 #include <string>
 
@@ -39,7 +40,7 @@ namespace qedfv
 {
 
 // Main class //////////////////////////////////////////////////////////////////////////////////////
-class QedFvCoef
+class Coef
 {
 public:
   struct Params
@@ -55,8 +56,8 @@ public:
   };
 
 public:
-  QedFvCoef(const Qed qed = Qed::L, const bool debug = false);
-  ~QedFvCoef(void);
+  Coef(const Qed qed = Qed::L, const bool debug = false);
+  ~Coef(void);
   void setDebug(const bool debug = true);
   void setQed(const Qed qed);
   bool isDebug(void) const;
@@ -95,7 +96,6 @@ private:
   double integrate(Integrand &func);
   Params tune(CoefFunc &coef, const double residual, const double eta0, const double etaFactor,
               const unsigned int nmax0, const unsigned int nmaxStep);
-  double threadedSum(Summand &func, const unsigned int nmax);
   double acceleratedSum(const double j, const double eta, const unsigned int nmax);
   double acceleratedSum(const double j, const DVec3 v, const double eta, const unsigned int nmax);
 

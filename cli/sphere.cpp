@@ -26,7 +26,7 @@ using namespace optp;
 using namespace std;
 using namespace qedfv;
 
-struct Coef
+struct CoefPoint
 {
   double theta, phi, c;
 };
@@ -38,8 +38,8 @@ int main(int argc, const char *argv[])
   double j, error;
   double vn;
   unsigned int nPoints;
-  QedFvCoef::Params par;
-  QedFvCoef::Qed qed;
+  Coef::Params par;
+  Coef::Qed qed;
   string filename;
 
   opt.addOption("v", "velocity", OptParser::OptType::value, false, "velocity norm");
@@ -65,19 +65,19 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
-  qed = opt.optionValue<QedFvCoef::Qed>("q");
+  qed = opt.optionValue<Coef::Qed>("q");
   vn = opt.optionValue<double>("v");
   nPoints = opt.optionValue<unsigned int>("n");
   filename = opt.optionValue("o");
   if (opt.gotOption("p"))
   {
-    par = opt.optionValue<QedFvCoef::Params>("p");
+    par = opt.optionValue<Coef::Params>("p");
     tuned = true;
   }
 
-  QedFvCoef coef(qed, debug);
+  Coef coef(qed, debug);
   double dtheta = M_PI / nPoints, dphi = 2. * M_PI / nPoints;
-  vector<Coef> result(nPoints * nPoints);
+  vector<CoefPoint> result(nPoints * nPoints);
   unsigned int i = 0;
 
   if (!tuned)

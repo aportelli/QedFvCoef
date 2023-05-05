@@ -20,17 +20,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 #include <array>
 #include <cmath>
+#include <qedfv/global.hpp>
 
 namespace qedfv
 {
-
-// Floating-point equal operator ///////////////////////////////////////////////////////////////////
-constexpr double cmpEps = 1.0e-10;
-
-inline bool isEqual(double a, double b)
-{
-  return fabs(a - b) <= ((fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * cmpEps);
-}
 
 // Vector and basic operations /////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -51,12 +44,12 @@ inline T norm2(const Vec3<T> &v)
   return dot(v, v);
 }
 
-DVec3 sphericalToCartesian(const double r, const double theta, const double phi)
+inline DVec3 sphericalToCartesian(const double r, const double theta, const double phi)
 {
   return {r * cos(phi) * sin(theta), r * sin(phi) * sin(theta), r * cos(theta)};
 }
 
-DVec3 CartesianToSpherical(const double x, const double y, const double z)
+inline DVec3 cartesianToSpherical(const double x, const double y, const double z)
 {
   return {sqrt(x * x + y * y + z * z), atan2(sqrt(x * x + y * y), z), atan2(y, x)};
 }

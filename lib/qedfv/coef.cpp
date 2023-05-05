@@ -20,21 +20,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <exception>
 #include <omp.h>
 #include <qedfv/coef.hpp>
+#include <qedfv/latticesum.hpp>
 
 using namespace qedfv;
 
-const std::map<std::string, QedFvCoef::Qed> QedFvCoef::qedMap = {{"L", Qed::L}, {"r", Qed::r}};
-
-// High-resolution timer ///////////////////////////////////////////////////////////////////////////
-double clockMs(void)
-{
-  auto t = std::chrono::high_resolution_clock::now().time_since_epoch();
-  auto d = std::chrono::duration_cast<std::chrono::nanoseconds>(t);
-  return static_cast<double>(d.count()) * 1e-6;
-}
+const std::map<std::string, Coef::Qed> Coef::qedMap = {{"L", Qed::L}, {"r", Qed::r}};
 
 // Public interface ////////////////////////////////////////////////////////////////////////////////
-QedFvCoef::QedFvCoef(const QedFvCoef::Qed qed, const bool debug)
+Coef::Coef(const Coef::Qed qed, const bool debug)
 {
   setDebug(debug);
   setQed(qed);
@@ -42,19 +35,19 @@ QedFvCoef::QedFvCoef(const QedFvCoef::Qed qed, const bool debug)
   intWorkspace_ = gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
 }
 
-QedFvCoef::~QedFvCoef(void) { gsl_integration_workspace_free(intWorkspace_); }
+Coef::~Coef(void) { gsl_integration_workspace_free(intWorkspace_); }
 
-void QedFvCoef::setDebug(const bool debug) { debug_ = debug; }
+void Coef::setDebug(const bool debug) { debug_ = debug; }
 
-void QedFvCoef::setQed(const Qed qed) { qed_ = qed; }
+void Coef::setQed(const Qed qed) { qed_ = qed; }
 
-bool QedFvCoef::isDebug(void) const { return debug_; }
+bool Coef::isDebug(void) const { return debug_; }
 
-QedFvCoef::Qed QedFvCoef::getQed(void) const { return qed_; }
+Coef::Qed Coef::getQed(void) const { return qed_; }
 
-QedFvCoef::Qed QedFvCoef::parseQed(const std::string str) { return qedMap.at(str); }
+Coef::Qed Coef::parseQed(const std::string str) { return qedMap.at(str); }
 
-double QedFvCoef::operator()(const double j, const double eta, const unsigned int nmax)
+double Coef::operator()(const double j, const double eta, const unsigned int nmax)
 {
   double result;
 
@@ -100,13 +93,9 @@ double QedFvCoef::operator()(const double j, const double eta, const unsigned in
   return result;
 }
 
-double QedFvCoef::operator()(const double j, const Params par)
-{
-  return (*this)(j, par.eta, par.nmax);
-}
+double Coef::operator()(const double j, const Params par) { return (*this)(j, par.eta, par.nmax); }
 
-double QedFvCoef::operator()(const double j, const DVec3 v, const double eta,
-                             const unsigned int nmax)
+double Coef::operator()(const double j, const DVec3 v, const double eta, const unsigned int nmax)
 {
   double result, aVal;
 
@@ -150,12 +139,12 @@ double QedFvCoef::operator()(const double j, const DVec3 v, const double eta,
   return result;
 }
 
-double QedFvCoef::operator()(const double j, const DVec3 v, const Params par)
+double Coef::operator()(const double j, const DVec3 v, const Params par)
 {
   return (*this)(j, v, par.eta, par.nmax);
 }
 
-double QedFvCoef::qedrTerm(const DVec3 v)
+double Coef::qedrTerm(const DVec3 v)
 {
   double term = 0.;
 
@@ -167,7 +156,7 @@ double QedFvCoef::qedrTerm(const DVec3 v)
   return term / 6.;
 }
 
-double QedFvCoef::a(const double k, const DVec3 &v)
+double Coef::a(const double k, const DVec3 &v)
 {
   double vn = sqrt(norm2(v));
 
@@ -186,7 +175,7 @@ double QedFvCoef::a(const double k, const DVec3 &v)
   }
 }
 
-double QedFvCoef::r(const double j)
+double Coef::r(const double j)
 {
   double time, rj;
 
@@ -194,16 +183,13 @@ double QedFvCoef::r(const double j)
   time = -clockMs();
   rj = integrate(i);
   time += clockMs();
-  if (isDebug())
-  {
-    printf("[QedFv]: computed R_j, j= %f, R_j= %f, error= %e, time= %f ms\n", j, intCache_,
-           intError_, time);
-  }
+  dgbPrintf(isDebug(), "computed R_j, j= %f, R_j= %f, error= %e, time= %f ms\n", j, intCache_,
+            intError_, time);
 
   return rj;
 }
 
-double QedFvCoef::rBar(const double j)
+double Coef::rBar(const double j)
 {
   double time, rbarj;
 
@@ -211,44 +197,40 @@ double QedFvCoef::rBar(const double j)
   time = -clockMs();
   rbarj = integrate(i);
   time += clockMs();
-  if (isDebug())
-  {
-    printf("[QedFv]: computed Rbar_j, j= %f, Rbar_j= %f, error= %e, time= %f ms\n", j, intCache_,
-           intError_, time);
-  }
+  dgbPrintf(isDebug(), "computed Rbar_j, j= %f, Rbar_j= %f, error= %e, time= %f ms\n", j, intCache_,
+            intError_, time);
 
   return rbarj;
 }
 
-QedFvCoef::Params QedFvCoef::tune(const double j, const double residual, const double eta0,
-                                  const double etaFactor, const unsigned int nmax0,
-                                  const unsigned int nmaxStep)
+Coef::Params Coef::tune(const double j, const double residual, const double eta0,
+                        const double etaFactor, const unsigned int nmax0,
+                        const unsigned int nmaxStep)
 {
   CoefFunc coef = [this, j](Params par) { return (*this)(j, par); };
 
   return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
 }
 
-QedFvCoef::Params QedFvCoef::tune(const double j, const Params par, const double residual,
-                                  const double etaFactor, const unsigned int nmaxStep)
+Coef::Params Coef::tune(const double j, const Params par, const double residual,
+                        const double etaFactor, const unsigned int nmaxStep)
 {
   CoefFunc coef = [this, j](Params par) { return (*this)(j, par); };
 
   return tune(coef, residual, par.eta, etaFactor, par.nmax, nmaxStep);
 }
 
-QedFvCoef::Params QedFvCoef::tune(const double j, const DVec3 v, const double residual,
-                                  const double eta0, const double etaFactor,
-                                  const unsigned int nmax0, const unsigned int nmaxStep)
+Coef::Params Coef::tune(const double j, const DVec3 v, const double residual, const double eta0,
+                        const double etaFactor, const unsigned int nmax0,
+                        const unsigned int nmaxStep)
 {
   CoefFunc coef = [this, j, v](Params par) { return (*this)(j, v, par); };
 
   return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
 }
 
-QedFvCoef::Params QedFvCoef::tune(const double j, const DVec3 v, const Params par,
-                                  const double residual, const double etaFactor,
-                                  const unsigned int nmaxStep)
+Coef::Params Coef::tune(const double j, const DVec3 v, const Params par, const double residual,
+                        const double etaFactor, const unsigned int nmaxStep)
 {
   CoefFunc coef = [this, j, v](Params par) { return (*this)(j, v, par); };
 
@@ -256,7 +238,7 @@ QedFvCoef::Params QedFvCoef::tune(const double j, const DVec3 v, const Params pa
 }
 
 // Private methods /////////////////////////////////////////////////////////////////////////////////
-double QedFvCoef::summand(IVec3 n, const double j, const double eta)
+double Coef::summand(IVec3 n, const double j, const double eta)
 {
   double n2 = norm2(n);
 
@@ -271,7 +253,7 @@ double QedFvCoef::summand(IVec3 n, const double j, const double eta)
   }
 }
 
-double QedFvCoef::summandJ0(IVec3 n, const double eta)
+double Coef::summandJ0(IVec3 n, const double eta)
 {
   double n2 = norm2(n);
 
@@ -286,7 +268,7 @@ double QedFvCoef::summandJ0(IVec3 n, const double eta)
   }
 }
 
-double QedFvCoef::summand(IVec3 n, const double j, const DVec3 v, const double eta)
+double Coef::summand(IVec3 n, const double j, const DVec3 v, const double eta)
 {
   double n2 = norm2(n);
 
@@ -303,7 +285,7 @@ double QedFvCoef::summand(IVec3 n, const double j, const DVec3 v, const double e
   }
 }
 
-double QedFvCoef::summandJ0(IVec3 n, const DVec3 v, const double eta)
+double Coef::summandJ0(IVec3 n, const DVec3 v, const double eta)
 {
   double n2 = norm2(n);
 
@@ -320,7 +302,7 @@ double QedFvCoef::summandJ0(IVec3 n, const DVec3 v, const double eta)
   }
 }
 
-double QedFvCoef::integrate(Integrand &func)
+double Coef::integrate(Integrand &func)
 {
   gsl_function gsl_f;
 
@@ -335,9 +317,9 @@ double QedFvCoef::integrate(Integrand &func)
   return intCache_;
 }
 
-QedFvCoef::Params QedFvCoef::tune(CoefFunc &coef, const double residual, const double eta0,
-                                  const double etaFactor, const unsigned int nmax0,
-                                  const unsigned int nmaxStep)
+Coef::Params Coef::tune(CoefFunc &coef, const double residual, const double eta0,
+                        const double etaFactor, const unsigned int nmax0,
+                        const unsigned int nmaxStep)
 {
   Params par;
   double previous, buf, res;
@@ -360,10 +342,7 @@ QedFvCoef::Params QedFvCoef::tune(CoefFunc &coef, const double residual, const d
   par.eta = eta0;
   par.nmax = nmax0;
   previous = converge(par);
-  if (isDebug())
-  {
-    printf("[QedFv]: eta= %.2f, nmax= %d, c= %.15e\n", par.eta, par.nmax, previous);
-  }
+  dgbPrintf(isDebug(), "eta= %.2f, nmax= %d, c= %.15e\n", par.eta, par.nmax, previous);
   do
   {
     par.eta *= etaFactor;
@@ -371,40 +350,14 @@ QedFvCoef::Params QedFvCoef::tune(CoefFunc &coef, const double residual, const d
     buf = converge(par);
     res = fabs(buf - previous) / (0.5 * (fabs(buf) + fabs(previous)));
     previous = buf;
-    if (isDebug())
-    {
-      printf("[QedFv]: eta= %.2f, nmax= %d, c= %.15e, residual= %.2e\n", par.eta, par.nmax, buf,
-             res);
-    }
+    dgbPrintf(isDebug(), "eta= %.2f, nmax= %d, c= %.15e, residual= %.2e\n", par.eta, par.nmax, buf,
+              res);
   } while (res > residual);
 
   return par;
 }
 
-double QedFvCoef::threadedSum(Summand &func, const unsigned int nmax)
-{
-  double sum = 0., time;
-  int n0, n1, n2, inmax = nmax;
-
-  time = -clockMs();
-#pragma omp parallel for collapse(3) reduction(+ : sum)
-  for (n0 = -inmax; n0 <= inmax; ++(n0))
-    for (n1 = -inmax; n1 <= inmax; ++(n1))
-      for (n2 = -inmax; n2 <= inmax; ++(n2))
-      {
-        IVec3 n = {n0, n1, n2};
-        sum += func(n);
-      }
-  time += clockMs();
-  if (isDebug())
-  {
-    printf("[QedFv]: threaded sum, result= %f, nmax= %d, time= %f ms\n", sum, nmax, time);
-  }
-
-  return sum;
-}
-
-double QedFvCoef::acceleratedSum(const double j, const double eta, const unsigned int nmax)
+double Coef::acceleratedSum(const double j, const double eta, const unsigned int nmax)
 {
   double sum;
   Summand wrapper;
@@ -417,13 +370,13 @@ double QedFvCoef::acceleratedSum(const double j, const double eta, const unsigne
   {
     wrapper = [this, j, eta](const IVec3 &n) { return summand(n, j, eta); };
   }
-  sum = threadedSum(wrapper, nmax);
+  sum = ThreadedSum::sum(wrapper, nmax, isDebug());
 
   return sum;
 }
 
-double QedFvCoef::acceleratedSum(const double j, const DVec3 v, const double eta,
-                                 const unsigned int nmax)
+double Coef::acceleratedSum(const double j, const DVec3 v, const double eta,
+                            const unsigned int nmax)
 {
   double sum;
   Summand wrapper;
@@ -436,7 +389,7 @@ double QedFvCoef::acceleratedSum(const double j, const DVec3 v, const double eta
   {
     wrapper = [this, j, v, eta](const IVec3 &n) { return summand(n, j, v, eta); };
   }
-  sum = threadedSum(wrapper, nmax);
+  sum = ThreadedSum::sum(wrapper, nmax, isDebug());
 
   return sum;
 }

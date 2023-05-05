@@ -31,8 +31,8 @@ int main(int argc, const char *argv[])
   bool parsed, debug, rest = true, tuned = false;
   double j, error;
   DVec3 v;
-  QedFvCoef::Params par;
-  QedFvCoef::Qed qed;
+  Coef::Params par;
+  Coef::Qed qed;
 
   opt.addOption("v", "velocity", OptParser::OptType::value, true,
                 "velocity as comma-separated list (e.g. 0.1,0.2,0.3)");
@@ -55,7 +55,7 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
-  qed = opt.optionValue<QedFvCoef::Qed>("q");
+  qed = opt.optionValue<Coef::Qed>("q");
   if (opt.gotOption("v"))
   {
     v = opt.optionValue<DVec3>("v");
@@ -63,13 +63,13 @@ int main(int argc, const char *argv[])
   }
   if (opt.gotOption("p"))
   {
-    par = opt.optionValue<QedFvCoef::Params>("p");
+    par = opt.optionValue<Coef::Params>("p");
     tuned = true;
   }
 
   double c;
 
-  QedFvCoef coef(qed, debug);
+  Coef coef(qed, debug);
 
   if (rest)
   {

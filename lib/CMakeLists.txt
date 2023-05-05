@@ -1,12 +1,13 @@
 add_library(qedfv SHARED)
 target_sources(qedfv
-  PRIVATE qedfv/coef.cpp qedfv/latticepoints.cpp
+  PRIVATE qedfv/coef.cpp qedfv/latticesum.cpp
   PUBLIC 
     FILE_SET public_headers
     TYPE HEADERS
     FILES
-      qedfv/latticepoints.hpp
       qedfv/coef.hpp
+      qedfv/global.hpp
+      qedfv/latticesum.hpp
       qedfv/vectorutils.hpp)
 target_link_libraries(qedfv PUBLIC OpenMP::OpenMP_CXX GSL::gsl GSL::gslcblas)
 set_target_properties(qedfv PROPERTIES VERSION ${PROJECT_VERSION})

@@ -29,7 +29,7 @@ using namespace optp;
 using namespace std;
 using namespace qedfv;
 
-struct Coef
+struct CoefPoint
 {
   double theta, phi, c;
 };
@@ -41,8 +41,8 @@ int main(int argc, const char *argv[])
   double j, error;
   double vn;
   unsigned int nPoints;
-  QedFvCoef::Params par;
-  QedFvCoef::Qed qed;
+  Coef::Params par;
+  Coef::Qed qed;
   string filename;
 
   opt.addOption("v", "velocity", OptParser::OptType::value, false, "velocity norm");
@@ -68,21 +68,21 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
-  qed = opt.optionValue<QedFvCoef::Qed>("q");
+  qed = opt.optionValue<Coef::Qed>("q");
   vn = opt.optionValue<double>("v");
   nPoints = opt.optionValue<unsigned int>("n");
   filename = opt.optionValue("o");
   if (opt.gotOption("p"))
   {
-    par = opt.optionValue<QedFvCoef::Params>("p");
+    par = opt.optionValue<Coef::Params>("p");
     tuned = true;
   }
 
-  QedFvCoef coef(qed, debug);
+  Coef coef(qed, debug);
   double phiMin = 0., phiMax = 0.25 * M_PI;
   double dphi = (phiMax - phiMin) / nPoints;
   double thetaMin = 0., thetaMax = 0.5 * M_PI;
-  vector<Coef> result(nPoints * nPoints);
+  vector<CoefPoint> result(nPoints * nPoints);
   double sphi = 0.;
   unsigned int i = 0;
 
@@ -119,7 +119,7 @@ int main(int argc, const char *argv[])
     result[k].c = coef(j, v, par);
   }
 
-  vector<Coef> unfold(i * 48);
+  vector<CoefPoint> unfold(i * 48);
   unsigned int r = 0;
 
   for (unsigned int k = 0; k < result.size(); ++k)
@@ -138,7 +138,7 @@ int main(int argc, const char *argv[])
             w[j] = -w[j];
           }
         }
-        DVec3 vs = CartesianToSpherical(w[0], w[1], w[2]);
+        DVec3 vs = cartesianToSpherical(w[0], w[1], w[2]);
         unfold[r] = {vs[1], vs[2], result[k].c};
         r++;
       }

@@ -17,4 +17,15 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <qedfv/coef.hpp>
+#include <qedfv/global.hpp>
+#include <qedfv/vectorutils.hpp>
+
+namespace qedfv
+{
+class ThreadedSum
+{
+public:
+  typedef std::function<double(const IVec3 &n)> Summand;
+  static double sum(Summand &func, const unsigned int nmax, const bool debug = false);
+};
+} // namespace qedfv
