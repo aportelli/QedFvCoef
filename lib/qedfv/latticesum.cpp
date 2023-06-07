@@ -19,7 +19,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 using namespace qedfv;
 
-double ThreadedSum::sum(Summand &func, const unsigned int nmax, const bool debug)
+double ThreadedSum::sum(Summand func, const unsigned int nmax, const bool debug)
 {
   double sum = 0., time;
   int n0, n1, n2, inmax = nmax;
@@ -35,8 +35,8 @@ double ThreadedSum::sum(Summand &func, const unsigned int nmax, const bool debug
         sum += func(n);
       }
   time += clockMs();
-  dgbPrintf(debug, "threaded sum, result= %f, nmax= %d, time= %f ms, perf= %.1e pt/s\n", sum, nmax,
-            time, nit / (1.0e-3 * time));
+  dgbPrintf(debug, "threaded sum, result= %.10e, nmax= %d, time= %f ms, perf= %.1e pt/s\n", sum,
+            nmax, time, nit / (1.0e-3 * time));
 
   return sum;
 }

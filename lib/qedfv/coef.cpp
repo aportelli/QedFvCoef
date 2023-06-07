@@ -204,37 +204,37 @@ double Coef::rBar(const double j)
 }
 
 Coef::Params Coef::tune(const double j, const double residual, const double eta0,
-                        const double etaFactor, const unsigned int nmax0,
+                        const double etaInvStep, const unsigned int nmax0,
                         const unsigned int nmaxStep)
 {
   CoefFunc coef = [this, j](Params par) { return (*this)(j, par); };
 
-  return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
+  return tune(coef, residual, eta0, etaInvStep, nmax0, nmaxStep);
 }
 
 Coef::Params Coef::tune(const double j, const Params par, const double residual,
-                        const double etaFactor, const unsigned int nmaxStep)
+                        const double etaInvStep, const unsigned int nmaxStep)
 {
   CoefFunc coef = [this, j](Params par) { return (*this)(j, par); };
 
-  return tune(coef, residual, par.eta, etaFactor, par.nmax, nmaxStep);
+  return tune(coef, residual, par.eta, etaInvStep, par.nmax, nmaxStep);
 }
 
 Coef::Params Coef::tune(const double j, const DVec3 v, const double residual, const double eta0,
-                        const double etaFactor, const unsigned int nmax0,
+                        const double etaInvStep, const unsigned int nmax0,
                         const unsigned int nmaxStep)
 {
   CoefFunc coef = [this, j, v](Params par) { return (*this)(j, v, par); };
 
-  return tune(coef, residual, eta0, etaFactor, nmax0, nmaxStep);
+  return tune(coef, residual, eta0, etaInvStep, nmax0, nmaxStep);
 }
 
 Coef::Params Coef::tune(const double j, const DVec3 v, const Params par, const double residual,
-                        const double etaFactor, const unsigned int nmaxStep)
+                        const double etaInvStep, const unsigned int nmaxStep)
 {
   CoefFunc coef = [this, j, v](Params par) { return (*this)(j, v, par); };
 
-  return tune(coef, residual, par.eta, etaFactor, par.nmax, nmaxStep);
+  return tune(coef, residual, par.eta, etaInvStep, par.nmax, nmaxStep);
 }
 
 // Private methods /////////////////////////////////////////////////////////////////////////////////
@@ -318,7 +318,7 @@ double Coef::integrate(Integrand &func)
 }
 
 Coef::Params Coef::tune(CoefFunc &coef, const double residual, const double eta0,
-                        const double etaFactor, const unsigned int nmax0,
+                        const double etaInvStep, const unsigned int nmax0,
                         const unsigned int nmaxStep)
 {
   Params par;
@@ -334,7 +334,7 @@ Coef::Params Coef::tune(CoefFunc &coef, const double residual, const double eta0
       buf = coef(par);
       res = fabs(buf - previous) / (0.5 * (fabs(buf) + fabs(previous)));
       previous = buf;
-    } while (res > QEDFV_DEFAULT_ERROR);
+    } while (res > 1.0e-2 * QEDFV_DEFAULT_ERROR);
 
     return previous;
   };
@@ -342,15 +342,16 @@ Coef::Params Coef::tune(CoefFunc &coef, const double residual, const double eta0
   par.eta = eta0;
   par.nmax = nmax0;
   previous = converge(par);
-  dgbPrintf(isDebug(), "eta= %.2f, nmax= %d, c= %.15e\n", par.eta, par.nmax, previous);
+  dgbPrintf(isDebug(), "eta= %.4f nmax= %d c= %.15e\n", par.eta, par.nmax, previous);
   do
   {
-    par.eta *= etaFactor;
+    par.eta = par.eta / (1 + etaInvStep * par.eta);
     par.nmax = (par.nmax > 10) ? (par.nmax - 10) : par.nmax;
     buf = converge(par);
     res = fabs(buf - previous) / (0.5 * (fabs(buf) + fabs(previous)));
+    res /= fabs(etaInvStep / (par.eta * etaInvStep - 1));
     previous = buf;
-    dgbPrintf(isDebug(), "eta= %.2f, nmax= %d, c= %.15e, residual= %.2e\n", par.eta, par.nmax, buf,
+    dgbPrintf(isDebug(), "eta= %.4f nmax= %d c= %.15e residual= %.2e\n", par.eta, par.nmax, buf,
               res);
   } while (res > residual);
 

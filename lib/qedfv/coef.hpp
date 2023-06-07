@@ -29,11 +29,17 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #ifndef QEDFV_DEFAULT_ERROR
 #define QEDFV_DEFAULT_ERROR 1.e-8
 #endif
+#ifndef QEDFV_DEFAULT_ETAINVSTEP
+#define QEDFV_DEFAULT_ETAINVSTEP 0.1
+#endif
+#ifndef QEDFV_DEFAULT_NMAXSTEP
+#define QEDFV_DEFAULT_NMAXSTEP 5
+#endif
 #ifndef QEDFV_GSL_INT_LIMIT
-#define QEDFV_GSL_INT_LIMIT 1000
+#define QEDFV_GSL_INT_LIMIT 10000
 #endif
 #ifndef QEDFV_GSL_INT_PREC
-#define QEDFV_GSL_INT_PREC 1.e-10
+#define QEDFV_GSL_INT_PREC 1.e-13
 #endif
 
 namespace qedfv
@@ -72,16 +78,18 @@ public:
   double r(const double j);
   double rBar(const double j);
   Params tune(const double j, const double residual = QEDFV_DEFAULT_ERROR, const double eta0 = 1.0,
-              const double etaFactor = 0.98, const unsigned int nmax0 = 5,
-              const unsigned int nmaxStep = 5);
+              const double etaInvStep = QEDFV_DEFAULT_ETAINVSTEP, const unsigned int nmax0 = 5,
+              const unsigned int nmaxStep = QEDFV_DEFAULT_NMAXSTEP);
   Params tune(const double j, const Params par, const double residual = QEDFV_DEFAULT_ERROR,
-              const double etaFactor = 0.98, const unsigned int nmaxStep = 5);
+              const double etaInvStep = QEDFV_DEFAULT_ETAINVSTEP,
+              const unsigned int nmaxStep = QEDFV_DEFAULT_NMAXSTEP);
   Params tune(const double j, const DVec3 v, const double residual = QEDFV_DEFAULT_ERROR,
-              const double eta0 = 1.0, const double etaFactor = 0.98, const unsigned int nmax0 = 5,
-              const unsigned int nmaxStep = 5);
+              const double eta0 = 1.0, const double etaInvStep = QEDFV_DEFAULT_ETAINVSTEP,
+              const unsigned int nmax0 = 5, const unsigned int nmaxStep = QEDFV_DEFAULT_NMAXSTEP);
   Params tune(const double j, const DVec3 v, const Params par,
-              const double residual = QEDFV_DEFAULT_ERROR, const double etaFactor = 0.98,
-              const unsigned int nmaxStep = 5);
+              const double residual = QEDFV_DEFAULT_ERROR,
+              const double etaInvStep = QEDFV_DEFAULT_ETAINVSTEP,
+              const unsigned int nmaxStep = QEDFV_DEFAULT_NMAXSTEP);
 
 private:
   typedef std::function<double(double)> Integrand;
@@ -94,7 +102,7 @@ private:
   double summand(IVec3 n, const double j, const DVec3 v, const double eta);
   double summandJ0(IVec3 n, const DVec3 v, const double eta);
   double integrate(Integrand &func);
-  Params tune(CoefFunc &coef, const double residual, const double eta0, const double etaFactor,
+  Params tune(CoefFunc &coef, const double residual, const double eta0, const double etaInvStep,
               const unsigned int nmax0, const unsigned int nmaxStep);
   double acceleratedSum(const double j, const double eta, const unsigned int nmax);
   double acceleratedSum(const double j, const DVec3 v, const double eta, const unsigned int nmax);
