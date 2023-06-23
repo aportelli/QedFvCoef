@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "pyqedfv"
+version = "0.1.0"
+description = ""
+authors = ["Antonin Portelli <antonin.portelli@me.com>"]
+readme = "Readme.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+matplotlib = "*"
+numpy = "*"
+scipy = "*"
+tqdm = "*"
+
+[tool.poetry.group.dev.dependencies]
+flake8 = "*"
+jupyter = "*"
+ipympl = "*"
+black = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
