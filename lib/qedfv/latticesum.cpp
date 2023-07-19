@@ -40,3 +40,21 @@ double ThreadedSum::sum(Summand func, const unsigned int nmax, const bool debug)
 
   return sum;
 }
+
+SolidAngleCharacteristic::SolidAngleCharacteristic(const DVec3 dir, double radius, double theta)
+    : dir_(dir), r_(radius), th_(theta)
+{
+}
+
+double SolidAngleCharacteristic::operator()(const IVec3 &n)
+{
+  double dn2 = norm2(dir_), nn2 = norm2(n), ddn = dot(n, dir_);
+  if ((sq(ddn) > dn2 * nn2 * sq(cos(th_))) && (nn2 < sq(r_)) && (ddn > 0.))
+  {
+    return 1.;
+  }
+  else
+  {
+    return 0.;
+  }
+}

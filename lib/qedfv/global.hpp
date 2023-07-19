@@ -53,4 +53,7 @@ inline double clockMs(void)
   return static_cast<double>(d.count()) * 1e-6;
 }
 
+// Simple square ///////////////////////////////////////////////////////////////////////////////////
+inline double sq(const double x) { return x * x; }
+
 } // namespace qedfv

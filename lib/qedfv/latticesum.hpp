@@ -26,6 +26,17 @@ class ThreadedSum
 {
 public:
   typedef std::function<double(const IVec3 &n)> Summand;
-  static double sum(Summand &func, const unsigned int nmax, const bool debug = false);
+  static double sum(Summand func, const unsigned int nmax, const bool debug = false);
+};
+
+class SolidAngleCharacteristic
+{
+public:
+  SolidAngleCharacteristic(const DVec3 dir, double radius, double theta);
+  double operator()(const IVec3 &n);
+
+private:
+  const DVec3 dir_;
+  const double r_, th_;
 };
 } // namespace qedfv
