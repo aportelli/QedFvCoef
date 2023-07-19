@@ -11,6 +11,7 @@ matplotlib = "*"
 numpy = "*"
 scipy = "*"
 tqdm = "*"
+panda = "*"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "*"
