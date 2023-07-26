@@ -34,7 +34,7 @@ struct CoefPoint
 int main(int argc, const char *argv[])
 {
   OptParser opt;
-  bool parsed, debug, tuned = false;
+  bool parsed, debug, gnuplot, tuned = false;
   double j, error;
   double vn;
   unsigned int nPoints;
@@ -53,6 +53,8 @@ int main(int argc, const char *argv[])
   opt.addOption("q", "qed", OptParser::OptType::value, true,
                 "QED theory to use, 'x' for QED_x, possible choices are L,r", "L");
   opt.addOption("d", "debug", OptParser::OptType::trigger, true, "show debug messages");
+  opt.addOption("g", "gnuplot", OptParser::OptType::trigger, true,
+                "gnuplot pm3d compatible output");
   opt.addOption("", "help", OptParser::OptType::trigger, true, "show this help message and exit");
   parsed = opt.parse(argc, argv);
   if (!parsed or (opt.getArgs().size() != 1) or opt.gotOption("help"))
@@ -65,6 +67,7 @@ int main(int argc, const char *argv[])
   j = strTo<double>(opt.getArgs()[0]);
   error = opt.optionValue<double>("e");
   debug = opt.gotOption("d");
+  gnuplot = opt.gotOption("g");
   qed = opt.optionValue<Coef::Qed>("q");
   vn = opt.optionValue<double>("v");
   nPoints = opt.optionValue<unsigned int>("n");
@@ -108,8 +111,14 @@ int main(int argc, const char *argv[])
 
   char buf[256];
   ofstream file(filename);
+  double prevTheta = result.front().theta;
   for (unsigned int k = 0; k < result.size(); ++k)
   {
+    if ((result[k].theta != prevTheta) && gnuplot)
+    {
+      file << endl;
+    }
+    prevTheta = result[k].theta;
     snprintf(buf, 256, "%10f %10f %.15e", result[k].theta, result[k].phi, result[k].c);
     file << buf << endl;
   }
