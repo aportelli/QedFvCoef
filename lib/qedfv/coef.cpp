@@ -97,11 +97,15 @@ double Coef::operator()(const double j, const Params par) { return (*this)(j, pa
 
 double Coef::operator()(const double j, const DVec3 v, const double eta, const unsigned int nmax)
 {
-  double result, aVal;
+  double result, aVal, vn2 = norm2(v);
 
-  if (norm2(v) >= 1.)
+  if (vn2 >= 1.)
   {
     throw std::logic_error("velocity has norm larger than 1");
+  }
+  if (isEqual(vn2, 0.))
+  {
+    return (*this)(j, eta, nmax);
   }
   result = acceleratedSum(j, v, eta, nmax);
   aVal = a(5. / (j + 2.), v);
