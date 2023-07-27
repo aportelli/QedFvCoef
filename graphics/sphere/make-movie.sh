@@ -16,5 +16,5 @@ ar=$(basename "${ar}")
 cd "${dir}"
 tar xf "${ar}"
 cd "${cwd}"
-ffmpeg -framerate "${fps}" -pattern_type glob -i "${dir}/*.png" -c:a copy -c:v libx264 -vb 20M -preset veryslow "${out}"
+ffmpeg -framerate "${fps}" -pattern_type glob -i "${dir}/*.png" -vcodec libx264 -pix_fmt yuv420p "${out}"
 rm "${dir}"/*.png
