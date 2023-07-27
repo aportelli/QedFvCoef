@@ -20,6 +20,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
+#include <functional>
 
 namespace qedfv
 {
