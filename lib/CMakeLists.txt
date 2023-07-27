@@ -10,8 +10,9 @@ target_sources(qedfv
       qedfv/latticesum.hpp
       qedfv/vectorutils.hpp)
 target_link_libraries(qedfv PUBLIC OpenMP::OpenMP_CXX GSL::gsl GSL::gslcblas)
-set_target_properties(qedfv PROPERTIES VERSION ${PROJECT_VERSION})
-set_target_properties(qedfv PROPERTIES SOVERSION 1)
+set_target_properties(qedfv PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION 1)
 target_include_directories(
   qedfv
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
