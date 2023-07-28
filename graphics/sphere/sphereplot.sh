@@ -30,8 +30,11 @@ unset ytics
 unset ztics
 set lmargin 0
 
+stats file u (sin(\$1)*\$3*pi/2.) nooutput
+sph_mean = STATS_mean
+print "spherical average =", sph_mean, "+/-", STATS_stddev/sqrt(STATS_records)
 stats file u 3 nooutput
 set cbrange [STATS_min:STATS_max]
- set palette defined ( STATS_min 'red', 0 'white', STATS_max 'blue' )
+set palette defined ( STATS_min 'red', sph_mean 'white', STATS_max 'blue' )
 splot file u 2:(\$1-pi/2):(1):3 notitle w pm3d
 EOF

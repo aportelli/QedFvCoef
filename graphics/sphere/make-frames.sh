@@ -13,14 +13,15 @@ dir=$(dirname "${ar}")
 ar=$(basename "${ar}")
 outar=${ar//data/frames}
 cd "${dir}"
-tar xf "${ar}"
+tar xvf "${ar}"
 cd "${cwd}"
 for file in "${dir}"/*.dat; do
-  v=$(echo "${file%.dat}" | awk -F '_' '{print $4}')
+  base=$(basename "${file}")
+  v=$(echo "${base%.dat}" | awk -F '_' '{print $4}')
   echo "${file} => ${file%.dat}.png"
   ./sphereplot.sh "${file}" "${file%.dat}.png" "${v}"
 done
 cd "${dir}"
-tar cjf "${outar}" ./*.png
+tar cvjf "${outar}" ./*.png
 rm -f ./*.png ./*.dat
 cd "${cwd}"

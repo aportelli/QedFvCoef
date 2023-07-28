@@ -32,6 +32,6 @@ for f in $(seq 1 ${frames}); do
 done
 cwd=$(pwd)
 cd "${outdir}"
-tar cjf "${outar}" ./*.dat
+tar cvjf "${outar}" ./*.dat
 rm -f ./*.dat
 cd "${cwd}"
