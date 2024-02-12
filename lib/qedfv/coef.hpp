@@ -35,6 +35,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #ifndef QEDFV_DEFAULT_NMAXSTEP
 #define QEDFV_DEFAULT_NMAXSTEP 5
 #endif
+#ifndef QEDFV_DEFAULT_CUT
+#define QEDFV_DEFAULT_CUT 80
+#endif
 #ifndef QEDFV_GSL_INT_LIMIT
 #define QEDFV_GSL_INT_LIMIT 10000
 #endif
@@ -75,8 +78,11 @@ public:
   double operator()(const double j, const DVec3 v, const Params par);
   double qedrTerm(const DVec3 v);
   double a(const double k, const DVec3 &v);
+  double b(const double k, const DVec3 &v);
   double r(const double j);
   double rBar(const double j);
+  double Q3();
+  double Q3v(const DVec3 v);
   Params tune(const double j, const double residual = QEDFV_DEFAULT_ERROR, const double eta0 = 1.0,
               const double etaInvStep = QEDFV_DEFAULT_ETAINVSTEP, const unsigned int nmax0 = 5,
               const unsigned int nmaxStep = QEDFV_DEFAULT_NMAXSTEP);
@@ -93,6 +99,7 @@ public:
 
 private:
   typedef std::function<double(double)> Integrand;
+  typedef std::function<double(double, double, double)> Integrand3;
   typedef std::function<double(const IVec3 &n)> Summand;
   typedef std::function<double(const Params par)> CoefFunc;
 
@@ -102,6 +109,8 @@ private:
   double summand(IVec3 n, const double j, const DVec3 v, const double eta);
   double summandJ0(IVec3 n, const DVec3 v, const double eta);
   double integrate(Integrand &func);
+  double integrate(Integrand &func, const double &min, const double &max);
+  double Q3v_integral(const DVec3 &v);
   Params tune(CoefFunc &coef, const double residual, const double eta0, const double etaInvStep,
               const unsigned int nmax0, const unsigned int nmaxStep);
   double acceleratedSum(const double j, const double eta, const unsigned int nmax);
@@ -112,6 +121,10 @@ private:
   Qed qed_{Qed::L};
   double jCache_, intCache_, intError_;
   gsl_integration_workspace *intWorkspace_;
+  static gsl_integration_workspace *intWorkspace_r_;
+  static gsl_integration_workspace *intWorkspace_th_;
+  static gsl_integration_workspace *intWorkspace_ph_;
+  static gsl_function gsl_f_r, gsl_f_th, gsl_f_ph;
   static const std::map<std::string, Qed> qedMap;
 };
 

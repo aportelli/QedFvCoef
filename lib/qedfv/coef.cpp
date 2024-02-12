@@ -18,6 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <chrono>
 #include <cmath>
 #include <exception>
+#include <gsl/gsl_sf.h>
 #include <omp.h>
 #include <qedfv/coef.hpp>
 #include <qedfv/latticesum.hpp>
@@ -26,6 +27,14 @@ using namespace qedfv;
 
 const std::map<std::string, Coef::Qed> Coef::qedMap = {{"L", Qed::L}, {"r", Qed::r}};
 
+gsl_integration_workspace *Coef::intWorkspace_r_ =
+    gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
+gsl_integration_workspace *Coef::intWorkspace_th_ =
+    gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
+gsl_integration_workspace *Coef::intWorkspace_ph_ =
+    gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
+gsl_function Coef::gsl_f_r, Coef::gsl_f_th, Coef::gsl_f_ph;
+
 // Public interface ////////////////////////////////////////////////////////////////////////////////
 Coef::Coef(const Coef::Qed qed, const bool debug)
 {
@@ -33,9 +42,18 @@ Coef::Coef(const Coef::Qed qed, const bool debug)
   setQed(qed);
   jCache_ = std::nan("");
   intWorkspace_ = gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
+  intWorkspace_r_ = gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
+  intWorkspace_th_ = gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
+  intWorkspace_ph_ = gsl_integration_workspace_alloc(QEDFV_GSL_INT_LIMIT);
 }
 
-Coef::~Coef(void) { gsl_integration_workspace_free(intWorkspace_); }
+Coef::~Coef(void)
+{
+  gsl_integration_workspace_free(intWorkspace_);
+  gsl_integration_workspace_free(intWorkspace_r_);
+  gsl_integration_workspace_free(intWorkspace_th_);
+  gsl_integration_workspace_free(intWorkspace_ph_);
+}
 
 void Coef::setDebug(const bool debug) { debug_ = debug; }
 
@@ -74,7 +92,12 @@ double Coef::operator()(const double j, const double eta, const unsigned int nma
     }
     else
     {
-      throw std::logic_error("error: j = 3 is not implemented");
+      if (!isEqual(j, jCache_))
+      {
+        jCache_ = j;
+        intCache_ = Q3();
+      }
+      result += 4 * M_PI * (log(eta) + intCache_);
     }
   }
   else
@@ -129,7 +152,12 @@ double Coef::operator()(const double j, const DVec3 v, const double eta, const u
   }
   else
   {
-    throw std::logic_error("error: j = 3 is not implemented");
+    if (!isEqual(j, jCache_))
+    {
+      jCache_ = j;
+      intCache_ = Q3v(v) / (4 * M_PI * aVal);
+    }
+    result += 4 * M_PI * aVal * (log(eta) + intCache_);
   }
   switch (getQed())
   {
@@ -179,6 +207,37 @@ double Coef::a(const double k, const DVec3 &v)
   }
 }
 
+double Coef::b(const double k, const DVec3 &v)
+{
+  double vn = sqrt(norm2(v));
+  double vnP = 1.0 + vn;
+  double vnM = 1.0 - vn;
+
+  double time, out = 0.0;
+
+  if (isEqual(k, 1.) && (vn > 0.))
+  {
+    out =
+        M_PI / vn *
+        (gsl_sf_dilog(2 * vn / (-vnM)) - gsl_sf_dilog(2 * vn / (vnP)) + 4.0 * log(2.0) * atanh(vn));
+  }
+  else if (!isEqual(k, 1.) && (vn > 0.))
+  {
+    Integrand i = [k, vn, vnP, vnM](double x)
+    {
+      return 2.0 * M_PI * x / (k - 1.0) / vn / (x * x - 1.0) *
+             (x * (pow(vnM, 1.0 - k) - pow(vnP, 1.0 - k)) + pow(1.0 + vn * x, 1.0 - k) -
+              pow(1.0 - vn * x, 1.0 - k));
+    };
+    time = -clockMs();
+    out = integrate(i, 0.0, 1.0) - 4.0 * M_PI * (1.0 - log(2.0)) * a(k, v);
+    time += clockMs();
+    dgbPrintf(isDebug(), "computed integral in B_k, k= %f, int= %f, error= %e, time= %f ms\n", k, intCache_,
+              intError_, time);
+  }
+  return out;
+}
+
 double Coef::r(const double j)
 {
   double time, rj;
@@ -205,6 +264,43 @@ double Coef::rBar(const double j)
             intError_, time);
 
   return rbarj;
+}
+
+double Coef::Q3()
+{
+  double time, q3j;
+  double cut = QEDFV_DEFAULT_CUT;
+
+  Integrand i = [](double r) { return pow(tanh(sinh(r)), 5.) / r; };
+  time = -clockMs();
+  q3j = integrate(i, 0.0, cut) - log(cut);
+  time += clockMs();
+  dgbPrintf(isDebug(), "computed Q3, Q3= %f, error= %e, time= %f ms\n", intCache_, intError_, time);
+
+  return q3j;
+}
+
+double Coef::Q3v(const DVec3 v)
+{
+  double time, q3j;
+  double cut = QEDFV_DEFAULT_CUT;
+
+  double j = 3.0;
+  Integrand3 i = [v](double r, double th, double phi)
+  {
+    DVec3 sph = sphericalToCartesian(1.0, th, phi);
+    double vdot = 0.0;
+    for (int i = 0; i < 3; i++)
+      vdot += v[i] * sph[i];
+    return sin(th) * pow(tanh(sinh(r * pow(1.0 - vdot, 1. / 5.))), 5.) / (r * (1.0 - vdot));
+  };
+  time = -clockMs();
+  q3j = Q3v_integral(v) - 4. * M_PI * a(1., v) * log(cut);
+  time += clockMs();
+  dgbPrintf(isDebug(), "computed Q3v_j, j= %f, Q3v_j= %f, error= %e, time= %f ms\n", j, intCache_,
+            intError_, time);
+
+  return q3j;
 }
 
 Coef::Params Coef::tune(const double j, const double residual, const double eta0,
@@ -319,6 +415,68 @@ double Coef::integrate(Integrand &func)
                         &intCache_, &intError_);
 
   return intCache_;
+}
+
+double Coef::integrate(Integrand &func, const double &min, const double &max)
+{
+  gsl_function gsl_f;
+
+  double (*wrapper)(double, void *) = [](double x, void *func) -> double
+  { return (*static_cast<Integrand *>(func))(x); };
+
+  gsl_f.function = wrapper;
+  gsl_f.params = &func;
+  gsl_integration_qags(&gsl_f, min, max, 0., QEDFV_GSL_INT_PREC, QEDFV_GSL_INT_LIMIT, intWorkspace_,
+                       &intCache_, &intError_);
+
+  return intCache_;
+}
+
+double Q3v_integrand(double r, double theta, double phi, double vx, double vy, double vz)
+{
+  DVec3 sph = sphericalToCartesian(1.0, theta, phi);
+  double vdot = vx * sph[0] + vy * sph[1] + vz * sph[2];
+  return sin(theta) * pow(tanh(sinh(r * pow(1.0 - vdot, 1. / 5.))), 5.) / (r * (1.0 - vdot));
+}
+
+double Coef::Q3v_integral(const DVec3 &v)
+{
+  double params[5] = {0.0, 0.0, v[0], v[1], v[2]};
+
+  gsl_f_r.function = [](double r, void *p) -> double
+  {
+    double *params = static_cast<double *>(p);
+    return Q3v_integrand(r, params[0], params[1], params[2], params[3], params[4]);
+  };
+  gsl_f_r.params = params;
+
+  gsl_f_th.function = [](double th, void *p) -> double
+  {
+    double *params = static_cast<double *>(p);
+    params[0] = th;
+    double result, error;
+    gsl_integration_qags(&gsl_f_r, 0., QEDFV_DEFAULT_CUT, 0., QEDFV_GSL_INT_PREC,
+                         QEDFV_GSL_INT_LIMIT, intWorkspace_r_, &result, &error);
+    return result;
+  };
+  gsl_f_th.params = params;
+
+  gsl_f_ph.function = [](double ph, void *p) -> double
+  {
+    double *params = static_cast<double *>(p);
+    params[1] = ph;
+    double result, error;
+    gsl_integration_qags(&gsl_f_th, 0., M_PI, 0., QEDFV_GSL_INT_PREC, QEDFV_GSL_INT_LIMIT,
+                         intWorkspace_th_, &result, &error);
+    return result;
+  };
+  gsl_f_ph.params = params;
+
+  double result, error;
+  gsl_integration_qags(&gsl_f_ph, 0., 2. * M_PI, 0., QEDFV_GSL_INT_PREC, QEDFV_GSL_INT_LIMIT,
+                       intWorkspace_ph_, &result, &error);
+
+  return result;
 }
 
 Coef::Params Coef::tune(CoefFunc &coef, const double residual, const double eta0,
