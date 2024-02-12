@@ -78,6 +78,7 @@ public:
   double operator()(const double j, const DVec3 v, const Params par);
   double qedrTerm(const DVec3 v);
   double a(const double k, const DVec3 &v);
+  double b(const double k, const DVec3 &v);
   double r(const double j);
   double rBar(const double j);
   double Q3();

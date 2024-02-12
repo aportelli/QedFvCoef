@@ -18,6 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <chrono>
 #include <cmath>
 #include <exception>
+#include <gsl/gsl_sf.h>
 #include <omp.h>
 #include <qedfv/coef.hpp>
 #include <qedfv/latticesum.hpp>
@@ -204,6 +205,37 @@ double Coef::a(const double k, const DVec3 &v)
   {
     return 1.;
   }
+}
+
+double Coef::b(const double k, const DVec3 &v)
+{
+  double vn = sqrt(norm2(v));
+  double vnP = 1.0 + vn;
+  double vnM = 1.0 - vn;
+
+  double time, out = 0.0;
+
+  if (isEqual(k, 1.) && (vn > 0.))
+  {
+    out =
+        M_PI / vn *
+        (gsl_sf_dilog(2 * vn / (-vnM)) - gsl_sf_dilog(2 * vn / (vnP)) + 4.0 * log(2.0) * atanh(vn));
+  }
+  else if (!isEqual(k, 1.) && (vn > 0.))
+  {
+    Integrand i = [k, vn, vnP, vnM](double x)
+    {
+      return 2.0 * M_PI * x / (k - 1.0) / vn / (x * x - 1.0) *
+             (x * (pow(vnM, 1.0 - k) - pow(vnP, 1.0 - k)) + pow(1.0 + vn * x, 1.0 - k) -
+              pow(1.0 - vn * x, 1.0 - k));
+    };
+    time = -clockMs();
+    out = integrate(i, 0.0, 1.0) - 4.0 * M_PI * (1.0 - log(2.0)) * a(k, v);
+    time += clockMs();
+    dgbPrintf(isDebug(), "computed integral in B_k, k= %f, int= %f, error= %e, time= %f ms\n", k, intCache_,
+              intError_, time);
+  }
+  return out;
 }
 
 double Coef::r(const double j)
