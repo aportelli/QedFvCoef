@@ -1,24 +1,18 @@
-[tool.poetry]
-name = "pyqedfv"
+[project]
+name = "qedfvcoef"
 version = "0.1.0"
-description = ""
-authors = ["Antonin Portelli <antonin.portelli@me.com>"]
-readme = "Readme.md"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib>=3.10.8",
+    "scipy>=1.15.3"
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-matplotlib = "*"
-numpy = "*"
-scipy = "*"
-tqdm = "*"
-panda = "*"
-
-[tool.poetry.group.dev.dependencies]
-flake8 = "*"
-jupyter = "*"
-ipympl = "*"
-black = "*"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "jupyter>=1.1.1",
+    "matplotlib-inline>=0.2.1",
+    "tqdm>=4.67.3",
+]

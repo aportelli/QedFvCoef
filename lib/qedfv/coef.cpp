@@ -238,7 +238,7 @@ Coef::Params Coef::tune(const double j, const DVec3 v, const Params par, const d
 {
   CoefFunc coef = [this, j, v](Params par) { return (*this)(j, v, par); };
 
-  return tune(coef, residual, par.eta, etaInvStep, par.nmax, nmaxStep);
+  return tune(coef, residual, par.eta * 1.2, etaInvStep, par.nmax - 10, nmaxStep);
 }
 
 // Private methods /////////////////////////////////////////////////////////////////////////////////

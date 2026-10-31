@@ -1,5 +1,9 @@
-file(DOWNLOAD https://raw.githubusercontent.com/aportelli/OptParser/main/OptParser.hpp 
+file(DOWNLOAD https://raw.githubusercontent.com/aportelli/OptParser/refs/heads/main/OptParser/OptParser.hpp 
   ${CMAKE_BINARY_DIR}/deps/include/OptParser.hpp)
+
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+
 add_library(optparser INTERFACE)
 target_include_directories(optparser INTERFACE ${CMAKE_BINARY_DIR}/deps/include)
 

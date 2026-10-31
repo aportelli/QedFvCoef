@@ -1,3 +1,6 @@
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}")
+
 add_library(qedfv SHARED)
 target_sources(qedfv
   PRIVATE qedfv/coef.cpp qedfv/latticesum.cpp
@@ -19,4 +22,4 @@ target_include_directories(
          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 install(TARGETS qedfv
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  FILE_SET public_headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qedfv)
+  FILE_SET public_headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
